@@ -12,6 +12,7 @@
 :root{
   --void:#07070A;--deep:#0D0E12;--panel:#14161B;--panel-2:#191C22;
   --line:#33373F;--ember:#FF6A16;--ember-dim:#7A3208;--red:#E6231A;
+  --blue:#2E9BFF;--blue-dim:#0C3E6E;--zb:#FF6157;
   --bone:#F2F3F6;--mute:#A7ADB7;--txt:#C6CBD3;--ok:#2ED47A;
   --sans:'IBM Plex Sans KR',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
   --disp:'Oxanium','IBM Plex Sans KR',sans-serif;
@@ -87,6 +88,10 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
   font-size:14.5px;cursor:pointer;transition:border-color .16s,background .16s,color .16s;}
 .opt span small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--mute);letter-spacing:.1em;margin-top:4px;text-transform:uppercase;}
 .opt input:checked+span{border-color:var(--ember);background:#17110B;color:var(--bone);box-shadow:inset 3px 0 0 var(--ember);}
+.opt input#t1:checked+span{border-color:var(--blue);background:#0B141F;box-shadow:inset 3px 0 0 var(--blue);}
+.opt input#t1:checked+span small{color:var(--blue);}
+.opt input#t2:checked+span{border-color:var(--zb);background:#1B0C0A;box-shadow:inset 3px 0 0 var(--zb);}
+.opt input#t2:checked+span small{color:var(--zb);}
 .opt input:focus-visible+span{outline:2px solid var(--ember);outline-offset:2px;}
 
 /* 업로드 */
@@ -246,7 +251,7 @@ footer div{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;}
       <div class="f">
         <label for="artist">활동명 <span class="req">필수</span></label>
         <input type="text" id="artist" name="artist" placeholder="캘린더와 전시에 표기될 이름">
-        <span class="hint">캘린더·전시·갤러리에 이 이름으로 표기됩니다. 실명을 쓰셔도 됩니다.</span>
+        <span class="hint">캘린더·전시·갤러리에 이 크레딧으로 표기됩니다. 실명을 쓰셔도 됩니다.</span>
         <span class="emsg" data-for="artist">활동명을 입력해 주십시오.</span>
       </div>
     </div>
@@ -441,7 +446,7 @@ footer div{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;}
 
     <div class="agree"><input type="checkbox" id="ag5" data-req="1">
       <label for="ag5"><b>필수</b>선정작의 홍보 목적 사용과 저작권 조건에 동의합니다.
-        <i>저작권은 작가에게 있습니다. Maxon·마루인터내셔널은 캘린더 수록, 전시, 온라인 갤러리, 웹·SNS·보도자료 등 홍보 범위에서 작가명을 표기해 사용합니다. 홍보 범위를 넘는 상업적 사용은 사전 협의하고 수익을 배분합니다. <a href="index.html#rights" target="_blank">전문 보기</a></i></label></div>
+        <i>저작권은 작가에게 있습니다. Maxon·마루인터내셔널은 캘린더 수록, 전시, 온라인 갤러리, 웹·SNS·보도자료 등 홍보 범위에서 작가 크레딧을 표기해 사용합니다. 홍보 범위를 넘는 상업적 사용은 사전 협의하고 수익을 배분합니다. <a href="index.html#rights" target="_blank">전문 보기</a></i></label></div>
 
     <div class="privacy">
       <table>

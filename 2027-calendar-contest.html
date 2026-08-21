@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2027 캘린더 공모전 — Cinema 4D · ZBrush | 마루인터내셔널</title>
+<meta name="description" content="Maxon 한국 총판 마루인터내셔널이 2027년 캘린더에 실릴 작품을 공모합니다. Cinema 4D 부문 6점, ZBrush 부문 6점. 접수 2026년 8월 19일 ~ 9월 27일.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E9EAE5;
+    --paper-hi:#F4F5F1;
+    --ink:#15171A;
+    --ink-70:#4A4F53;
+    --ink-45:#7C8186;
+    --rule:#C9CBC3;
+    --cyan:#0093D3;
+    --magenta:#D2006B;
+    --yellow:#F2CF00;
+    --sans:'IBM Plex Sans KR',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    --disp:'Archivo','IBM Plex Sans KR',sans-serif;
+    --mono:'IBM Plex Mono','IBM Plex Sans KR',monospace;
+    --pad:clamp(18px,5vw,72px);
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--sans);font-weight:400;font-size:16px;line-height:1.72;
+    -webkit-font-smoothing:antialiased;
+    word-break:keep-all;overflow-wrap:anywhere;
+  }
+  a{color:inherit;}
+  :focus-visible{outline:3px solid var(--magenta);outline-offset:3px;}
+
+  /* ── 공통 조판 ───────────────────────── */
+  .wrap{max-width:1180px;margin:0 auto;padding:0 var(--pad);}
+  .band{padding:clamp(56px,9vw,110px) 0;position:relative;}
+  .band + .band{border-top:1px dashed var(--rule);}
+
+  .eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-45);margin:0 0 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  }
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--ink-45);flex:none;}
+
+  h2.head{
+    font-size:clamp(26px,4vw,42px);font-weight:700;letter-spacing:-.03em;line-height:1.24;
+    margin:0 0 14px;
+  }
+  h2.head em{font-style:normal;font-family:var(--disp);font-stretch:112%;font-weight:800;}
+  .lede{font-size:clamp(15px,1.5vw,17.5px);color:var(--ink-70);max-width:60ch;margin:0 0 42px;}
+
+  .chip{
+    display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;
+    letter-spacing:.12em;text-transform:uppercase;padding:5px 10px;border:1px solid var(--rule);
+    border-radius:999px;color:var(--ink-70);background:var(--paper-hi);
+  }
+  .chip.pending{border-color:var(--yellow);background:rgba(242,207,0,.22);color:#5A4C00;border-style:dashed;}
+  .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;}
+
+  /* ── 상단 바 ───────────────────────── */
+  .topbar{
+    position:sticky;top:0;z-index:60;background:rgba(233,234,229,.9);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--rule);
+  }
+  .topbar-in{display:flex;align-items:center;justify-content:space-between;gap:16px;height:56px;}
+  .brand{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;}
+  .brand b{font-weight:500;}
+  .topbar nav{display:flex;gap:20px;font-size:13px;}
+  .topbar nav a{text-decoration:none;color:var(--ink-70);}
+  .topbar nav a:hover{color:var(--ink);text-decoration:underline;text-underline-offset:4px;}
+  @media(max-width:760px){.topbar nav{display:none;}}
+
+  /* ── 히어로 ───────────────────────── */
+  .hero{padding:clamp(46px,8vw,86px) 0 clamp(40px,6vw,64px);position:relative;overflow:hidden;}
+  .marks{position:absolute;inset:14px;pointer-events:none;}
+  .marks span{position:absolute;width:26px;height:26px;opacity:.5;}
+  .marks span::before,.marks span::after{content:"";position:absolute;background:var(--ink-45);}
+  .marks span::before{left:0;top:12.5px;width:26px;height:1px;}
+  .marks span::after{top:0;left:12.5px;height:26px;width:1px;}
+  .marks .tl{top:0;left:0;}.marks .tr{top:0;right:0;}
+  .marks .bl{bottom:0;left:0;}.marks .br{bottom:0;right:0;}
+  @media(max-width:760px){.marks{display:none;}}
+
+  .kicker{
+    font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--ink-45);margin:0 0 26px;
+  }
+  .wordmark{margin:0;line-height:.86;}
+  .wm-year{
+    display:block;font-family:var(--disp);font-stretch:120%;font-weight:900;
+    font-size:clamp(66px,15.5vw,190px);letter-spacing:-.045em;position:relative;
+  }
+  .wm-year .layer{position:absolute;inset:0;mix-blend-mode:multiply;}
+  .wm-year .c{color:var(--cyan);animation:reg-c .9s cubic-bezier(.2,.8,.2,1) both;}
+  .wm-year .m{color:var(--magenta);animation:reg-m .9s cubic-bezier(.2,.8,.2,1) both;}
+  .wm-year .k{position:relative;color:var(--ink);}
+  @keyframes reg-c{from{transform:translate(-16px,7px);opacity:0;}to{transform:translate(-2.5px,1.5px);opacity:1;}}
+  @keyframes reg-m{from{transform:translate(14px,-9px);opacity:0;}to{transform:translate(2.5px,-1.5px);opacity:1;}}
+  .wm-ko{
+    display:block;font-size:clamp(25px,5.6vw,62px);font-weight:700;letter-spacing:-.045em;
+    margin-top:.18em;
+  }
+  .wm-ko .thin{font-weight:400;color:var(--ink-70);}
+
+  .hero-sub{
+    display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin:34px 0 0;
+  }
+  .hero-note{margin:26px 0 0;max-width:52ch;color:var(--ink-70);font-size:15.5px;}
+
+  /* ── 마감 카운터 ───────────────────────── */
+  .deadline{
+    margin-top:40px;border:1px solid var(--ink);background:var(--paper-hi);
+    display:grid;grid-template-columns:auto 1fr auto;align-items:stretch;
+  }
+  .dl-num{
+    padding:20px 26px;background:var(--ink);color:var(--paper);
+    display:flex;flex-direction:column;justify-content:center;min-width:150px;
+  }
+  .dl-num b{font-family:var(--disp);font-stretch:112%;font-weight:800;font-size:44px;line-height:1;letter-spacing:-.03em;}
+  .dl-num span{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;opacity:.75;margin-top:6px;}
+  .dl-body{padding:20px 26px;display:flex;flex-direction:column;justify-content:center;gap:3px;}
+  .dl-body strong{font-size:17px;font-weight:600;letter-spacing:-.02em;}
+  .dl-body small{color:var(--ink-45);font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;}
+  .dl-cta{display:flex;align-items:center;padding:0 26px 0 0;}
+  @media(max-width:820px){
+    .deadline{grid-template-columns:1fr;}
+    .dl-cta{padding:0 26px 22px;}
+  }
+
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;padding:13px 22px;background:var(--magenta);
+    color:#fff;text-decoration:none;font-weight:600;font-size:15px;letter-spacing:-.01em;
+    border:1px solid var(--magenta);transition:background .18s ease,color .18s ease;
+  }
+  .btn:hover{background:var(--ink);border-color:var(--ink);}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--ink);}
+  .btn.ghost:hover{background:var(--ink);color:var(--paper);}
+  .btn .arw{font-family:var(--mono);}
+
+  /* ── 12칸 그리드 (시그니처) ───────────── */
+  .slots{margin-top:56px;}
+  .slots-cap{
+    display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;
+    font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-45);padding-bottom:10px;border-bottom:1px solid var(--ink);
+  }
+  .grid12{display:grid;grid-template-columns:repeat(6,1fr);gap:0;border-left:1px solid var(--rule);}
+  .cell{
+    border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);
+    aspect-ratio:3/4;padding:10px;display:flex;flex-direction:column;justify-content:space-between;
+    background:var(--paper-hi);position:relative;transition:background .2s ease;
+    animation:slot-in .5s ease both;
+  }
+  .cell:nth-child(n){animation-delay:calc(var(--i) * 45ms);}
+  @keyframes slot-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  .cell:hover{background:var(--paper);}
+  .cell:hover .ghost{color:var(--magenta);}
+  .cell .mo{font-family:var(--disp);font-stretch:112%;font-weight:800;font-size:clamp(15px,2.1vw,26px);letter-spacing:-.03em;line-height:1;}
+  .cell .ghost{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--ink-45);
+    text-transform:uppercase;transition:color .2s ease;
+  }
+  .cell::after{
+    content:"";position:absolute;left:10px;right:10px;top:50%;height:1px;
+    background:repeating-linear-gradient(90deg,var(--rule) 0 4px,transparent 4px 8px);
+  }
+  @media(max-width:640px){.grid12{grid-template-columns:repeat(3,1fr);}}
+
+  /* ── 사실 스트립 ───────────────────────── */
+  .facts{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--ink);border-left:1px solid var(--rule);}
+  .fact{padding:26px 22px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);}
+  .fact dt{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);margin-bottom:10px;}
+  .fact dd{margin:0;font-size:19px;font-weight:600;letter-spacing:-.025em;line-height:1.35;}
+  .fact dd small{display:block;font-size:13px;font-weight:400;color:var(--ink-70);letter-spacing:0;margin-top:5px;}
+  @media(max-width:860px){.facts{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:460px){.facts{grid-template-columns:1fr;}}
+
+  /* ── 부문 ───────────────────────── */
+  .tracks{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);}
+  .track{background:var(--paper-hi);padding:clamp(24px,3.4vw,40px);}
+  .track .tname{font-family:var(--disp);font-stretch:112%;font-weight:800;font-size:clamp(24px,3.2vw,36px);letter-spacing:-.03em;margin:0 0 4px;}
+  .track .tko{font-size:13.5px;color:var(--ink-45);font-family:var(--mono);letter-spacing:.1em;margin-bottom:22px;}
+  .track.c4d .tname{color:var(--cyan);}
+  .track.zb .tname{color:var(--magenta);}
+  .track .count{display:flex;align-items:baseline;gap:9px;padding:16px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin-bottom:20px;}
+  .track .count b{font-family:var(--disp);font-stretch:112%;font-weight:800;font-size:40px;line-height:1;letter-spacing:-.03em;}
+  .track .count span{font-size:14px;color:var(--ink-70);}
+  .ranks{list-style:none;margin:0;padding:0;font-size:14.5px;}
+  .ranks li{display:flex;gap:12px;padding:9px 0;border-bottom:1px dashed var(--rule);align-items:baseline;}
+  .ranks li:last-child{border-bottom:0;}
+  .ranks .r{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink-45);min-width:62px;flex:none;}
+  .ranks .v{color:var(--ink-70);}
+  .ranks li.win .v{color:var(--ink);font-weight:500;}
+  @media(max-width:760px){.tracks{grid-template-columns:1fr;}}
+
+  /* ── 규칙 카드 ───────────────────────── */
+  .rules{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);}
+  .rule-card{background:var(--paper-hi);padding:clamp(22px,3vw,34px);}
+  .rule-card h3{
+    margin:0 0 12px;font-size:17.5px;font-weight:600;letter-spacing:-.025em;
+    display:flex;gap:11px;align-items:baseline;
+  }
+  .rule-card h3 i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink-45);letter-spacing:.1em;flex:none;}
+  .rule-card p{margin:0;font-size:14.5px;color:var(--ink-70);line-height:1.75;}
+  .rule-card.key{background:var(--ink);color:var(--paper);}
+  .rule-card.key h3{color:var(--paper);}
+  .rule-card.key h3 i{color:rgba(233,234,229,.55);}
+  .rule-card.key p{color:rgba(233,234,229,.82);}
+  .rule-card.key strong{color:var(--yellow);font-weight:600;}
+  @media(max-width:760px){.rules{grid-template-columns:1fr;}}
+
+  /* ── 일정 ───────────────────────── */
+  .tl{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink);}
+  .tl li{
+    display:grid;grid-template-columns:56px 190px 1fr auto;gap:20px;align-items:baseline;
+    padding:20px 4px;border-bottom:1px solid var(--rule);
+  }
+  .tl .no{font-family:var(--mono);font-size:11px;color:var(--ink-45);letter-spacing:.1em;}
+  .tl .when{font-family:var(--disp);font-stretch:108%;font-weight:700;font-size:17px;letter-spacing:-.02em;}
+  .tl .what{font-size:15px;color:var(--ink-70);}
+  .tl .what b{color:var(--ink);font-weight:600;}
+  .tl .state{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-45);}
+  .tl li.now{background:var(--paper-hi);box-shadow:inset 3px 0 0 var(--magenta);padding-left:16px;}
+  .tl li.now .state{color:var(--magenta);}
+  .tl li.done{opacity:.5;}
+  @media(max-width:820px){
+    .tl li{grid-template-columns:1fr auto;gap:4px 14px;}
+    .tl .no{display:none;}
+    .tl .when{grid-column:1;}
+    .tl .state{grid-column:2;grid-row:1;}
+    .tl .what{grid-column:1/-1;}
+  }
+
+  /* ── 미정 카드 ───────────────────────── */
+  .tba{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);}
+  .tba-card{
+    background:var(--paper-hi);padding:clamp(26px,3.6vw,44px);position:relative;
+    background-image:repeating-linear-gradient(-45deg,transparent 0 13px,rgba(242,207,0,.14) 13px 26px);
+  }
+  .tba-card h3{margin:0 0 10px;font-size:20px;font-weight:600;letter-spacing:-.025em;}
+  .tba-card p{margin:14px 0 0;font-size:14.5px;color:var(--ink-70);}
+  @media(max-width:760px){.tba{grid-template-columns:1fr;}}
+
+  /* ── 권리 ───────────────────────── */
+  .rights{border:1px solid var(--ink);background:var(--paper-hi);}
+  .rights-row{display:grid;grid-template-columns:230px 1fr;gap:26px;padding:26px clamp(22px,3vw,34px);border-bottom:1px solid var(--rule);}
+  .rights-row:last-child{border-bottom:0;}
+  .rights-row dt{font-size:15.5px;font-weight:600;letter-spacing:-.02em;}
+  .rights-row dt span{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-45);font-weight:400;margin-top:5px;}
+  .rights-row dd{margin:0;font-size:14.5px;color:var(--ink-70);line-height:1.78;}
+  .rights-row dd mark{background:rgba(242,207,0,.55);color:var(--ink);padding:1px 3px;}
+  @media(max-width:760px){.rights-row{grid-template-columns:1fr;gap:8px;}}
+
+  /* ── FAQ ───────────────────────── */
+  details.q{border-bottom:1px solid var(--rule);}
+  details.q:first-of-type{border-top:1px solid var(--ink);}
+  details.q summary{
+    list-style:none;cursor:pointer;padding:19px 40px 19px 0;font-size:16px;font-weight:500;
+    letter-spacing:-.02em;position:relative;
+  }
+  details.q summary::-webkit-details-marker{display:none;}
+  details.q summary::after{
+    content:"+";position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    font-family:var(--mono);font-size:19px;color:var(--ink-45);
+  }
+  details.q[open] summary::after{content:"–";color:var(--magenta);}
+  details.q .a{padding:0 40px 22px 0;font-size:14.5px;color:var(--ink-70);max-width:72ch;}
+
+  /* ── 접수 ───────────────────────── */
+  .apply{background:var(--ink);color:var(--paper);}
+  .apply h2.head{color:var(--paper);}
+  .apply .lede{color:rgba(233,234,229,.75);}
+  .apply .eyebrow{color:rgba(233,234,229,.55);}
+  .apply .eyebrow::before{background:rgba(233,234,229,.55);}
+  .apply .btn.ghost{color:var(--paper);border-color:var(--paper);}
+  .apply .btn.ghost:hover{background:var(--paper);color:var(--ink);}
+  .contact{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(233,234,229,.22);
+    border:1px solid rgba(233,234,229,.22);margin-top:46px;
+  }
+  .contact div{background:var(--ink);padding:22px;}
+  .contact dt{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(233,234,229,.5);margin-bottom:8px;}
+  .contact dd{margin:0;font-size:15.5px;}
+  @media(max-width:700px){.contact{grid-template-columns:1fr;}}
+
+  footer{padding:34px 0 46px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--ink-45);}
+  footer .fl{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+
+  .notice{display:flex;gap:14px;align-items:flex-start;border:1px solid var(--yellow);
+  background:rgba(242,207,0,.16);padding:16px 20px;margin:0 0 22px;font-size:14px;line-height:1.7;color:var(--ink);}
+.notice .ic{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:#5A4C00;border:1px solid #B9A000;padding:4px 9px;flex:none;margin-top:2px;white-space:nowrap;}
+.notice b{font-weight:600;}
+@media(max-width:600px){.notice{flex-direction:column;gap:10px;}}
+.tbd{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;padding:2px 7px;
+    border:1px dashed var(--ink-45);color:var(--ink-45);white-space:nowrap;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation:none !important;transition:none !important;}
+    html{scroll-behavior:auto;}
+    .wm-year .c{transform:translate(-2.5px,1.5px);}
+    .wm-year .m{transform:translate(2.5px,-1.5px);}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap topbar-in">
+    <div class="brand"><b>MARU</b> INTERNATIONAL — Maxon 한국 총판</div>
+    <nav>
+      <a href="#track">부문</a>
+      <a href="#rule">응모 조건</a>
+      <a href="#schedule">일정</a>
+      <a href="#rights">작품 활용</a>
+      <a href="#apply">접수</a>
+    </nav>
+  </div>
+</div>
+
+<!-- ══ 히어로 ══ -->
+<header class="hero">
+  <div class="marks" aria-hidden="true"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div>
+  <div class="wrap">
+    <p class="kicker">2027 Calendar Open Call · Cinema 4D &amp; ZBrush</p>
+
+    <h1 class="wordmark">
+      <span class="wm-year" aria-label="2027">
+        <span class="layer c" aria-hidden="true">2027</span>
+        <span class="layer m" aria-hidden="true">2027</span>
+        <span class="k">2027</span>
+      </span>
+      <span class="wm-ko">캘린더 공모전<span class="thin"> — 열두 달, 열두 작품</span></span>
+    </h1>
+
+    <div class="hero-sub">
+      <span class="chip"><span class="dot" style="color:var(--cyan)"></span>Cinema 4D 부문 6점</span>
+      <span class="chip"><span class="dot" style="color:var(--magenta)"></span>ZBrush 부문 6점</span>
+      <span class="chip">접수 09.21 MON 오픈</span>
+      <span class="chip">인쇄 규격 8/25 공지</span>
+      <span class="chip">1인 1작품</span>
+      <span class="chip">시상식 11.07 SAT · 서울</span>
+    </div>
+
+    <p class="hero-note">
+      선정작은 2027년 캘린더에 인쇄되어 국내 CG 업계에 배포되고, 11월 7일 유저 커넥트 전시장에 원화 크기로 걸립니다.
+      학생·프리랜서·현업 모두 응모할 수 있습니다.
+    </p>
+
+    <div class="deadline">
+      <div class="dl-num">
+        <b id="dday">D-31</b>
+        <span id="ddayLabel">접수 시작까지</span>
+      </div>
+      <div class="dl-body">
+        <strong>2026년 9월 21일(월) 접수 시작</strong>
+        <small>OPEN 2026.09.21 MON 00:00 — CLOSE 2026.09.27 SUN 23:59</small>
+      </div>
+      <div class="dl-cta"><a class="btn" href="#apply">접수하기 <span class="arw">→</span></a></div>
+    </div>
+
+    <!-- 시그니처: 열두 칸 -->
+    <div class="slots">
+      <div class="slots-cap">
+        <span>2027 Calendar — 12 slots</span>
+        <span>비어 있는 칸 12 / 12</span>
+      </div>
+      <div class="grid12" id="grid12" aria-hidden="true"></div>
+      <p class="lede" style="margin:18px 0 0;font-size:14px;">
+        캘린더 한 권은 표지와 열두 달로 이루어집니다. 이 열두 칸을 두 부문에서 여섯 점씩 채웁니다.
+        어느 작품이 몇 월에 들어갈지는 심사 단계에서 정합니다.
+      </p>
+    </div>
+  </div>
+</header>
+
+<!-- ══ 한눈에 ══ -->
+<section class="band">
+  <div class="wrap">
+    <p class="eyebrow">At a glance</p>
+    <dl class="facts">
+      <div class="fact"><dt>선정</dt><dd>12점<small>Cinema 4D 6 + ZBrush 6</small></dd></div>
+      <div class="fact"><dt>시상</dt><dd>부문별 1·2·3등<small>11월 7일 무대에서 시상</small></dd></div>
+      <div class="fact"><dt>제출물</dt><dd>이미지 + 씬 파일<small>씬 파일은 필수 제출입니다</small></dd></div>
+      <div class="fact"><dt>결과 발표</dt><dd>10월 13일(화)<small>개별 통보 후 행사에서 공개</small></dd></div>
+    </dl>
+  </div>
+</section>
+
+<!-- ══ 부문 ══ -->
+<section class="band" id="track">
+  <div class="wrap">
+    <p class="eyebrow">부문</p>
+    <h2 class="head">두 부문에서 <em>여섯 점씩</em> 뽑습니다</h2>
+    <p class="lede">
+      <b>응모는 1인 1작품</b>, 두 부문 중 하나만 선택할 수 있습니다.
+      부문은 나뉘지만 캘린더는 한 권입니다. Cinema 4D로 만든 렌더와 ZBrush로 깎은 조형이
+      같은 달력 안에 나란히 실립니다. 최종 제출물은 두 부문 모두 인쇄용 정지 이미지입니다.
+    </p>
+
+    <div class="tracks">
+      <div class="track c4d">
+        <h3 class="tname">Cinema 4D</h3>
+        <p class="tko">모션그래픽 · 렌더 · 비주얼</p>
+        <div class="count"><b>6</b><span>점 선정 → 캘린더 수록</span></div>
+        <ul class="ranks">
+          <li class="win"><span class="r">1등</span><span class="v">1점 · 시상 및 작품 발표</span></li>
+          <li class="win"><span class="r">2등</span><span class="v">1점 · 시상 및 작품 발표</span></li>
+          <li class="win"><span class="r">3등</span><span class="v">1점 · 시상 및 작품 발표</span></li>
+          <li><span class="r">선정작</span><span class="v">3점 · 캘린더 수록 · 전시</span></li>
+        </ul>
+      </div>
+      <div class="track zb">
+        <h3 class="tname">ZBrush</h3>
+        <p class="tko">스컬프팅 · 캐릭터 · 조형</p>
+        <div class="count"><b>6</b><span>점 선정 → 캘린더 수록</span></div>
+        <ul class="ranks">
+          <li class="win"><span class="r">1등</span><span class="v">1점 · 시상 및 작품 발표</span></li>
+          <li class="win"><span class="r">2등</span><span class="v">1점 · 시상 및 작품 발표</span></li>
+          <li class="win"><span class="r">3등</span><span class="v">1점 · 시상 및 작품 발표</span></li>
+          <li><span class="r">선정작</span><span class="v">3점 · 캘린더 수록 · 전시</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="lede" style="margin:26px 0 0;font-size:14px;">
+      1·2·3등 수상자는 11월 7일 시상식에서 작업 과정을 중심으로 8~10분간 발표합니다.
+      참석이나 발표가 어려운 사정이 있다면 접수할 때 알려주십시오.
+    </p>
+  </div>
+</section>
+
+<!-- ══ 응모 조건 ══ -->
+<section class="band" id="rule">
+  <div class="wrap">
+    <p class="eyebrow">응모 조건</p>
+    <h2 class="head">직접, 처음, 이 공모전을 위해</h2>
+    <p class="lede">
+      캘린더에 실린 작품은 인쇄물로 남고 작가 크레딧이 함께 나갑니다.
+      그래서 출처가 분명한 작품만 받습니다. 아래 네 가지는 예외 없이 적용됩니다.
+    </p>
+
+    <div class="notice">
+      <span class="ic">공지 예정</span>
+      <span>인쇄 규격 안내 — 캘린더 판형(세로형 탁상 / 벽걸이)을 인쇄 업체와 확인 중입니다. 최종 인쇄 크기와 화면 방향(가로·세로)은 <b>8월 25일(화)</b> 이 페이지에 공지합니다. 접수 파일은 JPEG 규격만 맞추면 되므로 지금 응모하셔도 문제없으며, 원본은 반드시 보관해 주십시오.</span>
+    </div>
+
+    <div class="rules">
+      <div class="rule-card key">
+        <h3><i>01</i> 씬 파일을 함께 제출합니다</h3>
+        <p>
+          최종 이미지와 함께 <strong>작업 원본 씬 파일</strong>을 제출해야 합니다.
+          본인이 직접 만든 작업인지 확인하기 위한 절차이며, 씬 파일이 없는 응모작은
+          자격 검수 단계에서 제외됩니다. 제출된 씬 파일은 검수와 심사 목적으로만 열람하고
+          외부에 공개하지 않습니다.
+        </p>
+      </div>
+      <div class="rule-card">
+        <h3><i>02</i> 수상 이력이 없어야 합니다</h3>
+        <p>
+          다른 공모전·콘테스트에서 입상한 이력이 있는 작품은 응모할 수 없습니다.
+          같은 작품을 다른 공모전에 동시 응모 중인 경우도 마찬가지입니다.
+        </p>
+      </div>
+      <div class="rule-card">
+        <h3><i>03</i> 상업적으로 쓰인 적이 없어야 합니다</h3>
+        <p>
+          클라이언트 납품물, 광고·게임·영상에 실제 사용된 작업, 판매 목적으로 제작한 작업은
+          제외합니다. 상업적 용도로 사용하지 않은 순수 창작물이어야 합니다.
+        </p>
+      </div>
+      <div class="rule-card">
+        <h3><i>04</i> 외부 소스는 신고합니다</h3>
+        <p>
+          구매 에셋, 스캔 데이터, 유료·무료 텍스처를 사용했다면 접수할 때 출처와 라이선스를
+          적어주십시오. 사용 자체를 막지는 않지만, 신고하지 않은 사실이 뒤에 확인되면
+          선정이 취소될 수 있습니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="rules" style="margin-top:1px;border-top:0;">
+      <div class="rule-card">
+        <h3><i>05</i> 응모 자격</h3>
+        <p>
+          Cinema 4D 또는 ZBrush로 작업하는 분이면 누구나 응모할 수 있습니다.
+          학생·프리랜서·현업 모두 해당하며, 개인 자격으로 응모합니다. <b>1인 1작품</b>이며, 두 부문에 동시 응모할 수 없습니다.
+        </p>
+      </div>
+      <div class="rule-card">
+        <h3><i>06</i> 제출 규격</h3>
+        <p>
+          접수는 <b>JPEG · 최고 품질 · sRGB · 20MB 이하</b>, 긴 변 3000px 이상을 권장합니다.
+          CMYK 변환은 하지 마십시오. 인쇄용 TIFF 원본은 선정 확정 후 따로 요청드리며,
+          최종 인쇄 크기와 화면 방향은 <b>8월 25일(화) 공지 예정</b>입니다.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 일정 ══ -->
+<section class="band" id="schedule">
+  <div class="wrap">
+    <p class="eyebrow">일정</p>
+    <h2 class="head">접수부터 시상까지</h2>
+    <p class="lede">
+      접수 창구는 마감 일주일 전인 9월 21일(월)에 열립니다. 그 전까지는 요강만 공개되며 파일을 제출할 수 없습니다.
+    </p>
+
+    <ol class="tl" id="timeline">
+      <li data-start="2026-08-19" data-end="2026-09-20">
+        <span class="no">01</span><span class="when">08.19 — 09.20</span>
+        <span class="what"><b>요강 공개 · 준비 기간</b> · 접수는 아직 열리지 않습니다</span><span class="state"></span>
+      </li>
+      <li data-start="2026-09-21" data-end="2026-09-27">
+        <span class="no">02</span><span class="when">09.21 — 09.27</span>
+        <span class="what"><b>접수</b> · 9월 21일(월) 오픈, 9월 27일(일) 23:59 마감</span><span class="state"></span>
+      </li>
+      <li data-start="2026-09-28" data-end="2026-09-29">
+        <span class="no">03</span><span class="when">09.28 — 09.29</span>
+        <span class="what"><b>자격 검수</b> · 규격·씬 파일·라이선스 신고 확인</span><span class="state"></span>
+      </li>
+      <li data-start="2026-09-30" data-end="2026-10-08">
+        <span class="no">04</span><span class="when">09.30 — 10.08</span>
+        <span class="what"><b>심사위원 개별 심사</b> · 같은 기간 온라인 일반 투표 진행</span><span class="state"></span>
+      </li>
+      <li data-start="2026-10-12" data-end="2026-10-12">
+        <span class="no">05</span><span class="when">10.12 MON</span>
+        <span class="what"><b>합평</b> · 부문별 순위 확정</span><span class="state"></span>
+      </li>
+      <li data-start="2026-10-13" data-end="2026-10-13">
+        <span class="no">06</span><span class="when">10.13 TUE</span>
+        <span class="what"><b>결과 발표</b> · 수상자 개별 통보</span><span class="state"></span>
+      </li>
+      <li data-start="2026-11-07" data-end="2026-11-07">
+        <span class="no">07</span><span class="when">11.07 SAT</span>
+        <span class="what"><b>유저 커넥트 · 시상식</b> · 전시, 시상, 수상자 발표, 캘린더 배포</span><span class="state"></span>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ══ 심사와 시상 ══ -->
+<section class="band">
+  <div class="wrap">
+    <p class="eyebrow">심사와 시상</p>
+    <h2 class="head">순위는 심사위원이, 인기상은 투표가</h2>
+    <p class="lede">
+      1·2·3등과 캘린더 수록작은 심사위원 평가로 정합니다.
+      온라인 일반 투표는 별도 인기상으로 운영합니다. 자격 검수를 통과한 응모작은
+      9월 30일부터 투표 페이지에 공개되므로, 접수 시 공개 동의가 필요합니다.
+    </p>
+
+    <div class="tba">
+      <div class="tba-card">
+        <span class="chip pending"><span class="dot"></span>공개 예정</span>
+        <h3 style="margin-top:14px;">심사위원</h3>
+        <p>
+          교육계와 현업 프로 아티스트로 심사위원단을 구성하고 있습니다.
+          Cinema 4D와 ZBrush는 평가 축이 다르므로 부문별로 나누어 위촉합니다.
+          섭외가 마무리되는 대로 이 페이지에 명단을 올립니다.
+        </p>
+      </div>
+      <div class="tba-card">
+        <span class="chip pending"><span class="dot"></span>공개 예정</span>
+        <h3 style="margin-top:14px;">상품</h3>
+        <p>
+          1·2·3등 상품 내역을 정리하고 있습니다. 확정되는 대로 이 페이지에 공지하며,
+          접수 기간 중에 공개합니다. 상품과 별개로 선정작 전원에게는
+          캘린더 수록·작가 크레딧·전시·온라인 갤러리 게재가 제공됩니다.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 작품 활용과 권리 ══ -->
+<section class="band" id="rights">
+  <div class="wrap">
+    <p class="eyebrow">작품 활용과 권리</p>
+    <h2 class="head">저작권은 작가에게 남습니다</h2>
+    <p class="lede">
+      선정작을 어디에 어떻게 쓰는지 미리 밝힙니다. 응모는 아래 범위에 동의하는 것을 뜻하며,
+      아래에 적히지 않은 사용은 그때마다 작가와 따로 협의합니다.
+    </p>
+
+    <dl class="rights">
+      <div class="rights-row">
+        <dt>저작권<span>Copyright</span></dt>
+        <dd>작품의 저작권은 작가 본인에게 있습니다. 마루인터내셔널과 Maxon은 아래 범위의 이용 허락을 받습니다.</dd>
+      </div>
+      <div class="rights-row">
+        <dt>홍보 목적 사용<span>Promotional use</span></dt>
+        <dd>
+          선정작은 <mark>Maxon 및 마루인터내셔널의 홍보 자료</mark>에 사용될 수 있습니다.
+          2027년 캘린더 수록, 행사 전시, 온라인 갤러리, 웹사이트·SNS·보도자료, 전시 및 행사 홍보물이 여기에 해당합니다.
+          어느 경우에도 작가 크레딧을 함께 표기합니다.
+        </dd>
+      </div>
+      <div class="rights-row">
+        <dt>상업적 사용과 수익 배분<span>Commercial use</span></dt>
+        <dd>
+          홍보 범위를 넘어 <mark>상업적으로 사용하게 될 경우, 사전에 작가와 협의하고 발생 수익을 배분합니다.</mark>
+          배분 조건은 사용 형태와 규모에 따라 개별 서면 합의로 정합니다.
+          작가가 원하지 않으면 상업적 사용은 진행하지 않습니다.
+        </dd>
+      </div>
+      <div class="rights-row">
+        <dt>작가 본인의 사용<span>Artist's own use</span></dt>
+        <dd>작가가 자신의 포트폴리오, SNS, 전시에 작품을 사용하는 데에는 아무런 제한이 없습니다.</dd>
+      </div>
+      <div class="rights-row">
+        <dt>원본 파일 제출<span>Source files</span></dt>
+        <dd>
+          수상·선정 후 인쇄를 위해 고해상도 원본을 요청드립니다. 제출 기한은 개별 통보 시 안내하며,
+          기한 내 제출이 어려우면 차순위 작품으로 대체될 수 있습니다.
+        </dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<!-- ══ FAQ ══ -->
+<section class="band">
+  <div class="wrap">
+    <p class="eyebrow">자주 묻는 질문</p>
+    <h2 class="head">그 밖에</h2>
+
+    <details class="q">
+      <summary>씬 파일을 꼭 내야 하나요? 작업 노하우가 드러날 것 같습니다.</summary>
+      <div class="a">
+        필수입니다. 본인이 직접 만든 작업인지 확인할 방법이 씬 파일뿐이기 때문입니다.
+        다만 씬 파일은 자격 검수와 심사 목적으로만 열람하고, 외부에 공개하거나 배포하지 않습니다.
+        전시·갤러리·캘린더에 나가는 것은 최종 이미지뿐입니다.
+      </div>
+    </details>
+    <details class="q">
+      <summary>예전에 개인 작업으로 만들어 SNS에 올린 작품도 되나요?</summary>
+      <div class="a">
+        가능합니다. 개인 채널 공개는 상관없습니다. 걸리는 것은 두 가지입니다 —
+        다른 공모전에서 상을 받은 적이 있거나, 상업적 용도로 사용된 적이 있는 작품입니다.
+        둘 다 아니라면 응모할 수 있습니다.
+      </div>
+    </details>
+    <details class="q">
+      <summary>한 사람이 여러 점 낼 수 있나요? 두 부문에 모두 응모해도 되나요?</summary>
+      <div class="a">
+        아닙니다. <b>1인 1작품</b>이며, Cinema 4D와 ZBrush 두 부문에 동시 응모할 수 없습니다. 가장 자신 있는 한 점을 골라 응모해 주십시오. 중복 접수가 확인되면 마지막에 접수된 한 건만 유효 처리합니다.
+        판단이 어려우면 배현수 부장(hsbae@maru.co.kr · 02-6245-1628)에게 문의해 주시면 확인해 드립니다.
+      </div>
+    </details>
+    <details class="q">
+      <summary>수상하면 반드시 시상식에 가야 하나요?</summary>
+      <div class="a">
+        1·2·3등 수상자는 11월 7일 시상식에서 작품 발표를 하는 것을 원칙으로 합니다.
+        거리나 일정 때문에 어려운 경우가 있으니, 참석과 발표 가능 여부를 접수 단계에서 여쭙습니다.
+        발표가 부담스러우면 영상 메시지로 대체하는 방법도 있습니다.
+      </div>
+    </details>
+    <details class="q">
+      <summary>응모작이 온라인에 공개된다고요?</summary>
+      <div class="a">
+        자격 검수를 통과한 응모작은 9월 30일부터 10월 8일까지 온라인 투표 페이지에 공개됩니다.
+        인기상 투표를 위한 것이며, 접수 시 공개 동의를 받습니다.
+        검수에서 탈락한 작품은 공개하지 않습니다.
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ══ 접수 ══ -->
+<section class="band apply" id="apply">
+  <div class="wrap">
+    <p class="eyebrow">접수</p>
+    <h2 class="head">열두 칸 중 하나를 가져가십시오</h2>
+    <p class="lede">
+      접수 창구는 9월 21일(월) 00시에 열리고 9월 27일(일) 23시 59분에 닫힙니다.
+      일주일뿐이라 마감 직전에는 업로드가 몰립니다. 작품과 씬 파일 링크를 미리 준비해 두십시오.
+    </p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <a class="btn" href="2027-calendar-entry.html" id="applyLink">9월 21일(월) 오픈</a>
+      <a class="btn ghost" href="#rule">응모 조건 다시 보기</a>
+    </div>
+
+    <dl class="contact">
+      <div><dt>주최</dt><dd>마루인터내셔널 주식회사<br><span style="font-size:13px;opacity:.7;">Cinema 4D · ZBrush · Redshift · Red Giant 한국 총판</span></dd></div>
+      <div><dt>문의</dt><dd>배현수 부장<br><a href="mailto:hsbae@maru.co.kr" style="color:inherit;">hsbae@maru.co.kr</a><br><a href="tel:0262451628" style="color:inherit;">02-6245-1628</a></dd></div>
+      <div><dt>주소</dt><dd>서울특별시 서초구 논현로 175</dd></div>
+    </dl>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap fl">
+    <span>2027 CALENDAR OPEN CALL — MARU INTERNATIONAL</span>
+    <span>상품 내역 · 심사위원 명단 · 제출 규격은 확정 후 이 페이지에 공지합니다</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // 열두 칸 생성
+  var grid = document.getElementById('grid12');
+  if(grid){
+    var html = '';
+    for(var i=1;i<=12;i++){
+      html += '<div class="cell" style="--i:'+i+'">'
+           +    '<span class="mo">'+(i<10?'0':'')+i+'</span>'
+           +    '<span class="ghost">작품 대기</span>'
+           +  '</div>';
+    }
+    grid.innerHTML = html;
+  }
+
+  // 마감까지 남은 날
+  var OPEN = new Date('2026-09-21T00:00:00+09:00');
+  var deadline = new Date('2026-09-27T23:59:59+09:00');
+  var now = new Date();
+  var days = now < OPEN ? Math.ceil((OPEN - now)/86400000) : Math.ceil((deadline - now)/86400000);
+  var before = now < OPEN;
+  var num = document.getElementById('dday');
+  var label = document.getElementById('ddayLabel');
+  if(num && label){
+    if(before){ num.textContent = 'D-' + days; label.textContent = '접수 시작까지'; }
+    else if(days > 0){ num.textContent = 'D-' + days; label.textContent = '접수 마감까지'; }
+    else if(days === 0){ num.textContent = 'D-DAY'; label.textContent = '오늘 23:59 마감'; }
+    else { num.textContent = '마감'; label.textContent = '접수가 종료되었습니다'; }
+  }
+
+  // 일정 진행 상태
+  var today = new Date(); today.setHours(0,0,0,0);
+  var rows = document.querySelectorAll('#timeline li');
+  Array.prototype.forEach.call(rows, function(li){
+    var s = new Date(li.dataset.start + 'T00:00:00+09:00');
+    var e = new Date(li.dataset.end + 'T23:59:59+09:00');
+    var st = li.querySelector('.state');
+    if(today > e){ li.classList.add('done'); st.textContent = '완료'; }
+    else if(today >= s && today <= e){ li.classList.add('now'); st.textContent = '● 진행 중'; }
+    else { st.textContent = '예정'; }
+  });
+})();
+</script>
+</body>
+</html>

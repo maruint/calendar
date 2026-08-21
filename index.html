@@ -16,6 +16,9 @@
   --panel-2:#191C22;
   --line:#33373F;
   --ember:#FF6A16;
+  --blue:#2E9BFF;
+  --blue-dim:#0C3E6E;
+  --zb:#FF6157;
   --ember-dim:#7A3208;
   --red:#E6231A;
   --bone:#F2F3F6;
@@ -98,6 +101,8 @@ h2.head{
 
 .tagline{font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute);margin:0 0 16px;}
 .tagline b{color:var(--ember);font-weight:400;}
+.tagline b.c{color:var(--blue);}
+.tagline b.z{color:var(--zb);}
 
 .title{margin:0;}
 .title .yr{
@@ -118,6 +123,7 @@ h2.head{
   padding:6px 12px;border:1px solid var(--line);color:var(--mute);background:var(--deep);
 }
 .tag.o{border-color:var(--ember-dim);color:var(--ember);}
+.tag.b{border-color:var(--blue-dim);color:var(--blue);}
 .tag.r{border-color:#5A100C;color:#FF6157;}
 
 .hero-note{margin:18px 0 0;max-width:50ch;color:#C6CBD3;font-size:15.5px;line-height:1.7;}
@@ -215,11 +221,11 @@ h2.head{
 .tracks{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .track{padding:clamp(20px,2.6vw,32px);background:var(--panel);border:1px solid var(--line);position:relative;overflow:hidden;}
 .track::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;}
-.track.c4d::before{background:linear-gradient(90deg,var(--ember),transparent);}
-.track.zb::before{background:linear-gradient(90deg,var(--red),transparent);}
+.track.c4d::before{background:linear-gradient(90deg,var(--blue),transparent);}
+.track.zb::before{background:linear-gradient(90deg,var(--zb),transparent);}
 .track .tn{font-family:var(--disp);font-weight:800;font-size:clamp(25px,3.4vw,38px);letter-spacing:-.02em;margin:0 0 4px;}
-.track.c4d .tn{color:var(--ember);}
-.track.zb .tn{color:#FF4A3F;}
+.track.c4d .tn{color:var(--blue);}
+.track.zb .tn{color:var(--zb);}
 .track .tk{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin-bottom:16px;}
 .track .cnt{display:flex;align-items:baseline;gap:11px;padding:13px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:15px;}
 .track .cnt b{font-family:var(--disp);font-weight:800;font-size:44px;line-height:1;}
@@ -229,6 +235,10 @@ h2.head{
 .ranks li:last-child{border-bottom:0;}
 .ranks .r{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--mute);min-width:60px;flex:none;text-transform:uppercase;}
 .ranks li.win .r{color:var(--ember);}
+.track.c4d .ranks li.win .r{color:var(--blue);}
+.track.zb .ranks li.win .r{color:var(--zb);}
+.track.c4d .cnt b{color:var(--blue);}
+.track.zb .cnt b{color:var(--zb);}
 .ranks .v{color:#D3D8E0;font-weight:400;}
 .ranks li.win .v{color:var(--bone);font-weight:400;}
 @media(max-width:800px){.tracks{grid-template-columns:1fr;}}
@@ -286,8 +296,8 @@ h2.head{
 .pz p{margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line);font-size:13.5px;color:#BEC4CE;line-height:1.68;}
 @media(max-width:760px){.prize{grid-template-columns:1fr;}}
 .ranks .v b{font-weight:600;}
-.track.c4d .ranks .v b{color:var(--ember);}
-.track.zb .ranks .v b{color:#FF6157;}
+.track.c4d .ranks .v b{color:var(--blue);}
+.track.zb .ranks .v b{color:var(--zb);}
 .rcard p b{color:var(--bone);font-weight:500;}
 .notice{display:flex;gap:14px;align-items:flex-start;border:1px dashed #55401F;
   background:repeating-linear-gradient(-45deg,transparent 0 14px,rgba(255,106,22,.05) 14px 28px);
@@ -371,14 +381,14 @@ footer .fl{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;te
 <header class="hero">
   <div class="wrap hero-grid">
     <div>
-      <p class="tagline">Open Call — <b>Cinema 4D</b> &amp; <b>ZBrush</b> · 2027 Calendar</p>
+      <p class="tagline">Open Call — <b class="c">Cinema 4D</b> &amp; <b class="z">ZBrush</b> · 2027 Calendar</p>
       <h1 class="title">
         <span class="yr">2027</span>
         <span class="ko">캘린더 공모전 <span>／ 열두 달, 열두 작품</span></span>
       </h1>
 
       <div class="hero-tags">
-        <span class="tag o">Cinema 4D 부문 6점</span>
+        <span class="tag b">Cinema 4D 부문 6점</span>
         <span class="tag r">ZBrush 부문 6점</span>
         <span class="tag o">접수 09.21 MON 오픈</span>
         <span class="tag o">인쇄 규격 8/25 공지</span>
@@ -432,7 +442,7 @@ footer .fl{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;te
   <div class="wrap">
     <p class="eyebrow"><span class="num">00</span> At a glance</p>
     <dl class="facts">
-      <div class="fact"><dt>선정</dt><dd>12점<small>Cinema 4D 6 + ZBrush 6</small></dd></div>
+      <div class="fact"><dt>선정</dt><dd>12점<small><b style="color:var(--blue);font-weight:500">Cinema 4D</b> 6 + <b style="color:var(--zb);font-weight:500">ZBrush</b> 6</small></dd></div>
       <div class="fact"><dt>시상</dt><dd>최우수상 · 인기상<small>부문별 각 1명 · 11월 7일 시상</small></dd></div>
       <div class="fact"><dt>제출물</dt><dd>JPEG + 씬 파일<small>씬 파일은 필수 제출입니다</small></dd></div>
       <div class="fact"><dt>결과 발표</dt><dd>10월 13일<small>개별 통보 후 행사에서 공개</small></dd></div>
@@ -473,7 +483,7 @@ footer .fl{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;te
     <h2 class="head">두 부문에서 여섯 점씩</h2>
     <p class="lede">
       <b style="color:var(--bone);font-weight:500">응모는 1인 1작품</b>, 두 부문 중 하나만 선택할 수 있습니다.
-      부문은 나뉘지만 캘린더는 한 권입니다. Cinema 4D로 만든 렌더와 ZBrush로 깎은 조형이
+      부문은 나뉘지만 캘린더는 한 권입니다. <b style="color:var(--blue);font-weight:500">Cinema 4D</b>로 만든 렌더와 <b style="color:var(--zb);font-weight:500">ZBrush</b>로 깎은 조형이
       같은 달력 안에 나란히 실립니다. 최종 제출물은 두 부문 모두 인쇄용 정지 이미지입니다.
     </p>
 
@@ -515,7 +525,7 @@ footer .fl{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;te
     <p class="eyebrow"><span class="num">03</span> Eligibility</p>
     <h2 class="head">직접, 처음, 이 공모전을 위해</h2>
     <p class="lede">
-      캘린더에 실린 작품은 인쇄물로 남고 작가 이름이 함께 나갑니다.
+      캘린더에 실린 작품은 인쇄물로 남고 작가 크레딧이 함께 나갑니다.
       그래서 출처가 분명한 작품만 받습니다. 아래 항목은 예외 없이 적용됩니다.
     </p>
 
@@ -662,7 +672,7 @@ footer .fl{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;te
       </div>
       <div class="rrow">
         <dt>홍보 목적 사용<span>Promotional use</span></dt>
-        <dd>선정작은 <mark>Maxon 및 마루인터내셔널의 홍보 자료</mark>에 사용될 수 있습니다. 2027년 캘린더 수록, 행사 전시, 온라인 갤러리, 웹사이트·SNS·보도자료, 전시 및 행사 홍보물이 여기에 해당합니다. 어느 경우에도 작가 이름을 함께 표기합니다.</dd>
+        <dd>선정작은 <mark>Maxon 및 마루인터내셔널의 홍보 자료</mark>에 사용될 수 있습니다. 2027년 캘린더 수록, 행사 전시, 온라인 갤러리, 웹사이트·SNS·보도자료, 전시 및 행사 홍보물이 여기에 해당합니다. 어느 경우에도 작가 크레딧을 함께 표기합니다.</dd>
       </div>
       <div class="rrow">
         <dt>상업적 사용과 수익 배분<span>Commercial use</span></dt>

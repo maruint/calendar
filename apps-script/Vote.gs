@@ -154,20 +154,20 @@ function voteCode_(p) {
   if (limited_('emc:' + em.key, 3, 600)) return { ok: false, error: '인증번호는 10분에 3번까지 받을 수 있습니다. 받은 메일함·스팸함을 확인해 주십시오.' };
 
   var voted = votedTracks_(em.key, ph.mode);
-  if (voted.length >= 2) return { ok: false, error: '이 이메일은 두 부문 모두 이미 투표했습니다.' };
+  if (voted.length >= 1) return { ok: false, error: '이 이메일은 이미 투표했습니다. (1인 1표)', already: true };
 
   var code = String(Math.floor(100000 + Math.random() * 900000));
   CacheService.getScriptCache().put('code:' + em.key, JSON.stringify({ code: code, tries: 0 }), 1800);
 
   var subject = '[2027 캘린더 공모전] 인기상 투표 인증번호 ' + code;
   var text = '인증번호: ' + code + '\n\n투표 화면에 위 6자리 번호를 입력해 주십시오. 30분 동안 유효합니다.'
-    + '\n이 번호로 Cinema 4D·ZBrush 부문에 각 1표씩 투표할 수 있습니다.'
+    + '\n전체 작품 중 1작품에만 투표할 수 있습니다. (1인 1표)'
     + '\n직접 요청하지 않았다면 이 메일은 무시하셔도 됩니다.\n\n마루인터내셔널 · 2027 캘린더 공모전';
   var html = '<div style="font-family:sans-serif;font-size:14px;line-height:1.7;color:#222;max-width:520px">'
     + '<p>2027 캘린더 공모전 인기상 투표 인증번호입니다.</p>'
     + '<p style="font-size:30px;font-weight:700;letter-spacing:6px;margin:16px 0">' + code + '</p>'
     + '<p>투표 화면에 위 6자리 번호를 입력해 주십시오. 30분 동안 유효합니다.<br>'
-    + '이 번호로 Cinema 4D·ZBrush 부문에 각 1표씩 투표할 수 있습니다.</p>'
+    + '전체 작품 중 1작품에만 투표할 수 있습니다. (1인 1표)</p>'
     + '<p style="color:#666;font-size:13px">직접 요청하지 않았다면 이 메일은 무시하셔도 됩니다.<br>마루인터내셔널 · 2027 캘린더 공모전</p></div>';
   try {
     MailApp.sendEmail(em.addr, subject, text, { name: MAIL_SENDER_NAME, htmlBody: html });
@@ -226,8 +226,8 @@ function voteCast_(p) {
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    if (votedTracks_(em.key, ph.mode).indexOf(x.track) >= 0)
-      return { ok: false, error: '이 이메일은 ' + x.track + ' 부문에 이미 투표했습니다.', already: x.track };
+    if (votedTracks_(em.key, ph.mode).length)   // 1인 1표: 부문과 관계없이 한 번만
+      return { ok: false, error: '이 이메일은 이미 투표했습니다. (1인 1표)', already: true };
     var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
     var row = [now, ph.mode, x.track, x.id, x.title, x.artist, em.addr, em.key + '|' + x.track + '|' + ph.mode,
       String(p.ip || '').slice(0, 64), String(p.device || '').slice(0, 40)];
@@ -247,9 +247,9 @@ function setupVote() {
   setupJudge_();   // 심사위원 계정·심사 탭 (Judge.gs)
   var t = ss.getSheetByName(TALLY_SHEET) || ss.insertSheet(TALLY_SHEET);
   t.clear();
-  t.getRange('A1').setValue('정식 투표만 집계 (시험 투표 제외). 마감까지 외부 비공개.');
-  t.getRange('A3').setFormula("=IFERROR(QUERY('" + VOTE_SHEET + "'!A:F,\"select C, D, E, F, count(D) where B = '정식' group by C, D, E, F order by C, count(D) desc label count(D) '득표'\",1),\"아직 투표 없음\")");
-  t.getRange('H3').setFormula("=IFERROR(QUERY('" + VOTE_SHEET + "'!A:C,\"select C, count(C) where B = '정식' group by C label C '부문', count(C) '총 투표수'\",1),\"\")");
+  t.getRange('A1').setValue('정식 투표만 집계 (시험 투표 제외). 1인 1표 · 득표 상위 2점이 인기상. 마감까지 외부 비공개.');
+  t.getRange('A3').setFormula("=IFERROR(QUERY('" + VOTE_SHEET + "'!A:F,\"select D, E, F, C, count(D) where B = '정식' group by D, E, F, C order by count(D) desc label count(D) '득표'\",1),\"아직 투표 없음\")");
+  t.getRange('H3').setFormula("=IFERROR(QUERY('" + VOTE_SHEET + "'!A:C,\"select count(B) where B = '정식' label count(B) '총 투표수'\",1),\"\")");
 
   ScriptApp.getProjectTriggers().forEach(function (tr) {
     if (tr.getHandlerFunction() === 'purgeVoterInfo') ScriptApp.deleteTrigger(tr);

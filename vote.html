@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>인기상 투표 — 2027 캘린더 공모전 | 마루인터내셔널</title>
-<meta name="description" content="2027 캘린더 공모전 인기상 온라인 투표. Cinema 4D · ZBrush 부문별 1표. 2026년 10월 14일 ~ 10월 22일.">
+<meta name="description" content="2027 캘린더 공모전 인기상 온라인 투표. Cinema 4D · ZBrush 전체 작품 중 1인 1표. 2026년 10월 14일 ~ 10월 22일.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="2027 캘린더 공모전 · 인기상 투표">
-<meta property="og:description" content="마음에 드는 작품에 투표해 주세요. Cinema 4D · ZBrush 부문별 1표, 10월 14일 ~ 22일.">
+<meta property="og:description" content="마음에 드는 작품 하나에 투표해 주세요. 1인 1표, 10월 14일 ~ 22일.">
 <meta property="og:image" content="https://calendar.maru.co.kr/og-image.jpg?v=2">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,6 +25,7 @@
   --pad:clamp(16px,4vw,52px);
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%;overflow-x:hidden}
 body{margin:0;background:var(--void);color:var(--bone);font-family:var(--sans);font-size:16px;line-height:1.68;-webkit-font-smoothing:antialiased}
 a{color:inherit}
@@ -146,12 +147,12 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
 <section class="wrap hero">
   <div class="kicker">Popular Vote · 인기상 투표</div>
   <h1>마음에 드는 작품에<br>한 표를 주세요</h1>
-  <p class="lead">자격 검수를 통과한 응모작입니다. Cinema 4D와 ZBrush 부문에 <b>각각 1표</b>씩 투표할 수 있으며, 부문별 최다 득표작 1점이 인기상(상금 30만원)을 받습니다.</p>
+  <p class="lead">자격 검수를 통과한 응모작입니다. Cinema 4D·ZBrush 구분 없이 전체 작품 중 <b>1작품에만 1표</b>를 줄 수 있으며, 득표 상위 2점이 인기상(상금 각 30만원)을 받습니다.</p>
   <div id="status" class="status"><i></i><span>불러오는 중…</span></div>
   <div class="how">
     <div><b>01</b>작품을 눌러 크게 보고 「이 작품에 투표」를 누릅니다.</div>
     <div><b>02</b>이메일로 받은 6자리 인증번호를 입력합니다.</div>
-    <div><b>03</b>부문별 1표, 한 번 한 투표는 바꿀 수 없습니다.</div>
+    <div><b>03</b>1인 1표, 한 번 한 투표는 바꿀 수 없습니다.</div>
   </div>
 </section>
 
@@ -169,7 +170,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
   <h3>투표 안내</h3>
   <ul>
     <li>투표 기간: 2026년 10월 14일(수) 00:00 ~ 10월 22일(목) 23:59</li>
-    <li>이메일 1개당 부문별 1표입니다. 득표수는 마감 때까지 공개하지 않으며, 결과는 10월 27일(화)에 발표합니다.</li>
+    <li>이메일 1개당 전체 작품 중 1표입니다. 득표수는 마감 때까지 공개하지 않으며, 결과는 10월 27일(화)에 발표합니다.</li>
     <li>여러 이메일을 만들어 반복 투표하는 등 부정 투표가 확인되면 해당 표는 무효 처리될 수 있습니다.</li>
     <li>응모자 본인도 투표할 수 있습니다. 작품 순서는 무작위로 섞여 보입니다.</li>
   </ul>
@@ -261,7 +262,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
   };
   var device = store.get('device');
   if (!device) { device = Math.random().toString(36).slice(2) + Date.now().toString(36); store.set('device', device); }
-  var mine = store.get('mine') || {};      // { 'Cinema 4D': 접수번호, ZBrush: 접수번호 }
+  var mine = store.get('mine1') || {};     // { all: 투표한 접수번호 } — 1인 1표
   var sess = (function(){ try { return JSON.parse(sessionStorage.getItem('cal27sess')) || {}; } catch(e){ return {}; } })();
   function saveSess(){ try { sessionStorage.setItem('cal27sess', JSON.stringify(sess)); } catch(e){} }
 
@@ -284,7 +285,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
       else if (o.action==='jdata') ok({ ok:true, name:'미리보기', criteria:['완성도','독창성','캘린더 적합성'], close:'2026-10-25T23:59:59+09:00',
         entries:demoList().map(function(e){ e.proc=2; e.ext='외부 소스 없음'; return e; }), scores:store.get('demoScores')||{} });
       else if (o.action==='jscore') { var sc=store.get('demoScores')||{}; sc[o.entry]={s1:o.s1,s2:o.s2,s3:o.s3,pick:o.pick,note:o.note,at:'방금'}; store.set('demoScores',sc); ok({ ok:true, at:'방금' }); }
-      else { var e=demoList().filter(function(x){ return x.id===o.id; })[0]; ok({ ok:true, track:e.track, voted:[e.track], mode:'시험' }); }
+      else { var e=demoList().filter(function(x){ return x.id===o.id; })[0]; ok({ ok:true, track:e.track, voted:[e.id], mode:'시험' }); }
     },500); });
     return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)})
       .then(function(r){ return r.json(); })
@@ -316,7 +317,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
   function render(){
     var D=state.data;
     var all = seededShuffle(D.entries, sess.seed);
-    ['Cinema 4D','ZBrush'].forEach(function(t){
+    if (false) ['Cinema 4D','ZBrush'].forEach(function(t){
       var tab = document.querySelector('.tab[data-track="'+t+'"]');
       tab.querySelector('small').textContent = all.filter(function(e){ return e.track===t; }).length;
       tab.querySelector('.done').textContent = state.judge
@@ -324,22 +325,22 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
         : (mine[t] ? '✓ 투표함' : '');
       tab.setAttribute('aria-selected', String(t===state.track));
     });
-    state.list = all.filter(function(e){ return e.track===state.track; });
+    state.list = all;   // 부문 구분 없이 한 갤러리
     var g=$('#grid'); g.innerHTML='';
     $('#empty').hidden = state.list.length>0;
     if (!state.list.length) $('#empty').textContent='공개된 작품이 아직 없습니다.';
     state.list.forEach(function(e,i){
-      var b=document.createElement('button'); b.className='card'+(mine[e.track]===e.id?' mine':'');
+      var b=document.createElement('button'); b.className='card'+(mine.all===e.id?' mine':'');
       var th=document.createElement('div'); th.className='thumb';
       var im=document.createElement('img'); im.loading='lazy'; im.alt=e.title; im.src=img(e.id,600);
       im.onload=function(){ im.classList.add('on'); };
       th.appendChild(im);
       if (state.judge){ var sc=state.judge.scores[e.id], jb=document.createElement('span');
         jb.className='badge j'+(sc?'':' none'); jb.textContent= sc ? (Number(sc.s1)+Number(sc.s2)+Number(sc.s3))+'점'+(sc.pick?' · 추천':'') : '미심사'; th.appendChild(jb); }
-      else if (mine[e.track]===e.id){ var bd=document.createElement('span'); bd.className='badge'; bd.textContent='내 투표'; th.appendChild(bd); }
+      else if (mine.all===e.id){ var bd=document.createElement('span'); bd.className='badge'; bd.textContent='내 투표'; th.appendChild(bd); }
       var m=document.createElement('div'); m.className='meta';
       var t=document.createElement('div'); t.className='t'; t.textContent=e.title;
-      var a=document.createElement('div'); a.className='a'; a.textContent=e.artist;
+      var a=document.createElement('div'); a.className='a'; a.textContent=e.artist + ' · ' + e.track;
       m.appendChild(t); m.appendChild(a); b.appendChild(th); b.appendChild(m);
       b.onclick=function(){ openEntry(i); };
       g.appendChild(b);
@@ -355,8 +356,8 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     $('#mDesc').textContent=e.desc;
     var v=$('#mVote'); v.className='btn';
     if (phase!=='live'){ v.disabled=true; v.textContent= phase==='end' ? '투표 마감' : '투표 기간이 아닙니다'; }
-    else if (mine[e.track]===e.id){ v.disabled=true; v.className='btn ok'; v.textContent='✓ 이 작품에 투표했습니다'; }
-    else if (mine[e.track]){ v.disabled=true; v.textContent=e.track+' 부문 투표 완료'; }
+    else if (mine.all===e.id){ v.disabled=true; v.className='btn ok'; v.textContent='✓ 이 작품에 투표했습니다'; }
+    else if (mine.all){ v.disabled=true; v.textContent='이미 다른 작품에 투표했습니다'; }
     else { v.disabled=false; v.textContent='이 작품에 투표'; }
     $('#mVote').hidden = !!state.judge;
     $('#mExt').textContent = state.judge && e.ext ? '외부 소스 · ' + e.ext : '';
@@ -418,9 +419,9 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
       b.disabled=false; b.textContent='인증번호 받기';
       if (!r.ok) { $('#msg1').textContent=r.error; return; }
       sess.email=em; sess.code=''; sess.sent=Date.now(); saveSess();
-      (r.voted||[]).forEach(function(t){ if(!mine[t]) mine[t]='?'; });
-      store.set('mine',mine);
-      if (mine[state.voting.track]) { $('#msg1').textContent='이 이메일은 '+state.voting.track+' 부문에 이미 투표했습니다.'; render(); return; }
+      if ((r.voted||[]).length && !mine.all) mine.all='?';
+      store.set('mine1',mine);
+      if (mine.all) { $('#msg1').textContent='이 이메일은 이미 투표했습니다. (1인 1표)'; render(); return; }
       $('#sentTo').textContent=em; $('#msg2').className='msg good'; $('#msg2').textContent='인증번호를 보냈습니다.';
       show('step2'); $('#code').focus();
     });
@@ -437,15 +438,15 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
       if (!r.ok) {
         $('#msg2').textContent=r.error;
         if (r.expired) { sess.code=''; sess.sent=0; saveSess(); }
-        if (r.already) { mine[r.already]=mine[r.already]||'?'; store.set('mine',mine); render(); }
+        if (r.already) { mine.all=mine.all||'?'; store.set('mine1',mine); render(); }
         return;
       }
       sess.code=code; saveSess();
-      mine[e.track]=e.id; store.set('mine',mine);
+      mine.all=e.id; store.set('mine1',mine);
       var other = e.track==='ZBrush' ? 'Cinema 4D' : 'ZBrush';
-      $('#doneMsg').textContent='「'+e.title+'」에 '+e.track+' 부문 1표를 넣었습니다. 결과는 10월 27일 발표합니다.';
+      $('#doneMsg').textContent='「'+e.title+'」에 1표를 넣었습니다. 결과는 10월 27일 발표합니다.';
       var go=$('#goOther');
-      if (!mine[other]) { go.hidden=false; go.textContent=other+' 부문도 투표하기'; go.onclick=function(){ closeDlg(); closeEntry(); state.track=other; render(); window.scrollTo({top:$('#tabs').offsetTop,behavior:'smooth'}); }; }
+      if (false) { go.hidden=false; go.textContent=other+' 부문도 투표하기'; go.onclick=function(){ closeDlg(); closeEntry(); state.track=other; render(); window.scrollTo({top:$('#tabs').offsetTop,behavior:'smooth'}); }; }
       else go.hidden=true;
       show('step3'); render(); openEntry(state.list.indexOf(e));
     });
@@ -508,7 +509,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
       state.data.entries = r.entries;
       document.body.classList.add('judge');
       $('#judgeBar').hidden=false; $('#jName').textContent='심사위원 ' + r.name + '님';
-      $('#jLink').hidden=true; $('#tabs').hidden=false; $('#empty').hidden=true;
+      $('#jLink').hidden=true; $('#empty').hidden=true;
       $('#status').className='status live'; $('#status').lastChild.textContent='심사 모드 · 점수는 10월 25일까지 저장·수정할 수 있습니다';
       judgeProg(); render(); window.scrollTo(0,0);
     });
@@ -536,13 +537,12 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     state.data=D; setStatus(); setInterval(setStatus,60000);
     if (judge && judge.token) return enterJudge().then(function(){
       var m=location.hash.match(/^#e-(.+)$/), t=state.judge && m && state.data.entries.filter(function(e){ return e.id===decodeURIComponent(m[1]); })[0];
-      if (t) { state.track=t.track; render(); openEntry(state.list.indexOf(t)); }
+      if (t) openEntry(state.list.indexOf(t));
     });
     if (phase==='before') {
       $('#empty').hidden=false; $('#empty').textContent='검수를 통과한 작품은 10월 14일(수) 00:00에 이곳에 공개됩니다.';
       return;
     }
-    $('#tabs').hidden=false;
     var m=location.hash.match(/^#e-(.+)$/), target=m && D.entries.filter(function(e){ return e.id===decodeURIComponent(m[1]); })[0];
     if (target) state.track=target.track;
     render();

@@ -12,7 +12,7 @@
  *   2) 편집기에서 setupVote() 를 한 번 실행한다 → 「투표」·「집계」 탭과 개인정보 삭제 예약이 만들어진다.
  *   3) 배포 → 배포 관리 → 편집(연필) → 버전: 새 버전 → 배포. (주소는 그대로)
  */
-var VOTE_OPEN  = new Date('2026-10-14T00:00:00+09:00');
+var VOTE_OPEN  = new Date('2026-10-14T17:00:00+09:00');
 var VOTE_CLOSE = new Date('2026-10-22T23:59:59+09:00');
 var VOTE_PURGE = new Date('2026-11-27T09:00:00+09:00');   // 결과 발표(10/27) 후 1개월 — 투표자 이메일·IP 삭제
 var VOTE_PAUSED = false;                                  // 비상시 true 로 바꾸고 새 버전 배포 → 투표 일시 중지
@@ -130,7 +130,7 @@ function phase_(preview) {
   var now = new Date();
   if (VOTE_PAUSED) return { ok: false, error: '투표가 잠시 중지되었습니다. 잠시 후 다시 시도해 주십시오.' };
   if (now > VOTE_CLOSE) return { ok: false, error: '투표가 마감되었습니다. 결과는 10월 27일 발표합니다.' };
-  if (now < VOTE_OPEN) return preview ? { ok: true, mode: '시험' } : { ok: false, error: '투표는 10월 14일에 시작합니다.' };
+  if (now < VOTE_OPEN) return preview ? { ok: true, mode: '시험' } : { ok: false, error: '투표는 10월 14일(수) 오후 5시에 시작합니다.' };
   return { ok: true, mode: '정식' };
 }
 

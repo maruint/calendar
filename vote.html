@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>인기상 투표 — 2027 캘린더 공모전 | 마루인터내셔널</title>
-<meta name="description" content="2027 캘린더 공모전 인기상 온라인 투표. Cinema 4D · ZBrush 전체 작품 중 1인 1표. 2026년 10월 14일 ~ 10월 22일.">
+<meta name="description" content="2027 캘린더 공모전 인기상 온라인 투표. Cinema 4D · ZBrush 전체 작품 중 1인 1표. 2026년 10월 14일 17:00 ~ 10월 22일 23:59.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="2027 캘린더 공모전 · 인기상 투표">
-<meta property="og:description" content="마음에 드는 작품 하나에 투표해 주세요. 1인 1표, 10월 14일 ~ 22일.">
+<meta property="og:description" content="마음에 드는 작품 하나에 투표해 주세요. 1인 1표, 10월 14일 오후 5시 ~ 22일.">
 <meta property="og:image" content="https://calendar.maru.co.kr/og-image.jpg?v=2">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -169,7 +169,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
 <section class="wrap notice">
   <h3>투표 안내</h3>
   <ul>
-    <li>투표 기간: 2026년 10월 14일(수) 00:00 ~ 10월 22일(목) 23:59</li>
+    <li>투표 기간: 2026년 10월 14일(수) 17:00 ~ 10월 22일(목) 23:59</li>
     <li>이메일 1개당 전체 작품 중 1표입니다. 득표수는 마감 때까지 공개하지 않으며, 결과는 10월 27일(화)에 발표합니다.</li>
     <li>여러 이메일을 만들어 반복 투표하는 등 부정 투표가 확인되면 해당 표는 무효 처리될 수 있습니다.</li>
     <li>응모자 본인도 투표할 수 있습니다. 작품 순서는 무작위로 섞여 보입니다.</li>
@@ -309,7 +309,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     var D=state.data, now=Date.now(), open=Date.parse(D.open), close=Date.parse(D.close), el=$('#status');
     el.className='status';
     if (D.paused) { phase='paused'; el.lastChild.textContent='투표가 잠시 중지되었습니다'; return; }
-    if (now < open && !PREVIEW) { phase='before'; el.lastChild.textContent='10월 14일(수) 00:00 공개 · ' + fmtLeft(open-now) + ' 남음'; }
+    if (now < open && !PREVIEW) { phase='before'; el.lastChild.textContent='10월 14일(수) 오후 5시 공개 · ' + fmtLeft(open-now) + ' 남음'; }
     else if (now > close) { phase='end'; el.classList.add('end'); el.lastChild.textContent='투표 마감 · 결과는 10월 27일(화) 발표'; }
     else { phase='live'; el.classList.add('live'); el.lastChild.textContent= (now<open ? '시험 투표 중 · ' : '투표 진행 중 · 마감까지 ') + fmtLeft(close-now); }
   }
@@ -540,7 +540,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
       if (t) openEntry(state.list.indexOf(t));
     });
     if (phase==='before') {
-      $('#empty').hidden=false; $('#empty').textContent='검수를 통과한 작품은 10월 14일(수) 00:00에 이곳에 공개됩니다.';
+      $('#empty').hidden=false; $('#empty').textContent='검수를 통과한 작품은 10월 14일(수) 오후 5시에 이곳에 공개됩니다.';
       return;
     }
     var m=location.hash.match(/^#e-(.+)$/), target=m && D.entries.filter(function(e){ return e.id===decodeURIComponent(m[1]); })[0];

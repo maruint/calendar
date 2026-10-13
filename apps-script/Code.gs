@@ -22,7 +22,9 @@ var FIELDS = ['이름','활동명','이메일','휴대전화','소속구분','�
   '사용소프트웨어','작업설명','이미지파일','제작과정자료','외부소스','외부소스상세','시상식참석',
   '전달사항','과정자료활용동의','소식수신동의','접수시각'];
 
-function doGet() {
+function doGet(e) {
+  var v = voteGet_(e || {});   // 인기상 투표 (Vote.gs)
+  if (v) return v;
   return ContentService.createTextOutput('2027 캘린더 공모전 접수 수신 중');
 }
 
@@ -31,6 +33,8 @@ function doPost(e) {
     var p = JSON.parse(e.postData.contents);
     if (p.action === 'upload') return json_(upload_(p));
     if (p.action === 'submit') return json_(submit_(p));
+    var v = votePost_(p);   // 인기상 투표 (Vote.gs)
+    if (v) return v;
     throw new Error('unknown action');
   } catch (err) {
     console.error(err);

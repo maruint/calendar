@@ -112,11 +112,32 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
 .msg.good{color:var(--ok)}
 .agree{font-size:12px;color:var(--mute);margin-top:12px;line-height:1.55}
 .link{background:none;border:0;color:var(--mute);text-decoration:underline;font-size:13px;padding:0;margin-top:10px}
+.judgebar{position:sticky;top:0;z-index:6;display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;background:var(--ember-dim);color:var(--bone);font-size:13px;padding:8px var(--pad)}
+.judgebar .link{margin:0;color:var(--bone)}
+.judge .tabs{top:37px}
+.badge.j{background:var(--blue);color:#fff}
+.badge.j.none{background:var(--panel-2);color:var(--mute);border:1px solid var(--line)}
+.jpanel{border:1px solid var(--line);background:var(--panel);padding:16px;margin-top:20px}
+.jpanel h4{margin:0 0 8px;font-size:14px;color:var(--ember);font-family:var(--mono);font-weight:500}
+.crit{margin:10px 0 0}
+.crit .lb{font-size:13px;color:var(--txt);display:flex;justify-content:space-between}
+.pips{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:6px}
+.pips button{border:1px solid var(--line);background:var(--void);color:var(--mute);padding:8px 0;font-family:var(--mono);font-size:13px}
+.pips button.on{background:var(--ember);border-color:var(--ember);color:#160700;font-weight:700}
+.jpanel textarea{width:100%;min-height:80px;background:var(--void);border:1px solid var(--line);color:var(--bone);padding:10px;font:inherit;font-size:14px;margin-top:12px;resize:vertical}
+.jpanel .pick{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:14px}
+.jpanel .pick input{width:18px;height:18px;accent-color:var(--ember)}
+.jpanel .foot{display:flex;gap:10px;align-items:center;margin-top:12px}
+.jpanel .total{font-family:var(--mono);font-size:13px;color:var(--mute);margin-left:auto}
+.proc{display:grid;gap:8px;margin-top:18px}
+.proc img{width:100%;display:block;background:var(--panel-2);min-height:120px}
+.proc h4{margin:6px 0 0;font-size:13px;color:var(--mute);font-weight:500}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--bone);color:var(--void);padding:10px 16px;font-size:14px;z-index:40;display:none}
 </style>
 </head>
 <body>
 <div id="previewBar" class="preview" hidden>시험 모드 — 여기서 한 투표는 「시험」으로 기록되며 집계에 들어가지 않습니다.</div>
+<div id="judgeBar" class="judgebar" hidden><b id="jName"></b><span id="jProg"></span><button class="link" id="jOut">로그아웃</button></div>
 <div id="demoBar" class="preview" hidden>화면 미리보기 — 샘플 작품(2021 캘린더 수록작)입니다. 인증번호는 아무 6자리나 넣으면 되고, 메일·투표 기록은 남지 않습니다.</div>
 <header class="top"><div class="wrap bar">
   <a href="/">← 2027 캘린더 공모전</a><span>MARU INTERNATIONAL · MAXON KR</span>
@@ -159,6 +180,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     <li>투표를 위해 인증번호를 요청하면 위 내용에 동의한 것으로 봅니다. 동의하지 않으면 투표할 수 없습니다.</li>
   </ul>
   <p>문의 · hsbae@maru.co.kr · 02-6245-1628 · 마루인터내셔널</p>
+  <p><button class="link" id="jLink">심사위원 로그인</button></p>
 </section>
 
 <!-- 작품 상세 -->
@@ -175,7 +197,10 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
         <button class="btn" id="mVote">이 작품에 투표</button>
         <button class="btn ghost" id="mShare">공유하기</button>
       </div>
+      <div id="jPanel" class="jpanel" hidden></div>
       <p class="desc" id="mDesc"></p>
+      <div class="sw" id="mExt"></div>
+      <div class="proc" id="mProc"></div>
       <div class="navs"><button id="mPrev">← 이전 작품</button><button id="mNext">다음 작품 →</button></div>
     </div>
   </div>
@@ -208,6 +233,16 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     </div>
   </div>
 </div>
+<div class="dlg" id="jdlg">
+  <div class="box">
+    <h3>심사위원 로그인</h3>
+    <p class="sub">주최 측에서 전달받은 아이디와 비밀번호를 입력해 주십시오.</p>
+    <label for="jid">아이디</label><input id="jid" autocomplete="username" autocapitalize="off">
+    <label for="jpw">비밀번호</label><input id="jpw" type="password" autocomplete="current-password">
+    <div class="msg" id="jmsg"></div>
+    <div class="row"><button class="btn ghost" id="jCancel">취소</button><button class="btn" id="jGo">로그인</button></div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -230,16 +265,25 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
   var sess = (function(){ try { return JSON.parse(sessionStorage.getItem('cal27sess')) || {}; } catch(e){ return {}; } })();
   function saveSess(){ try { sessionStorage.setItem('cal27sess', JSON.stringify(sess)); } catch(e){} }
 
+  var judge = (function(){ try { return JSON.parse(sessionStorage.getItem('cal27judge')) || null; } catch(e){ return null; } })();
+  state.judge = null;   // { name, criteria, scores }
   if (DEMO) $('#demoBar').hidden = false; else if (PREVIEW) $('#previewBar').hidden = false;
 
   function toast(t){ var el=$('#toast'); el.textContent=t; el.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(function(){ el.style.display='none'; },2200); }
   function img(id,w){
     if (DEMO) { var n=id.slice(-2); return '/past/2021/m' + n + (w<1000 ? '-s' : '') + '.webp'; }
     return API + '?action=img&id=' + encodeURIComponent(id) + '&w=' + w; }
+  function pimg(id,n){
+    if (DEMO) return '/past/2021/' + ['e04','e05','e07','e09'][n%4] + '.webp';
+    return API + '?action=pimg&id=' + encodeURIComponent(id) + '&n=' + n + '&w=1600&t=' + encodeURIComponent(judge.token); }
   function post(o){
     o.preview = PREVIEW; o.device = device;
     if (DEMO) return new Promise(function(ok){ setTimeout(function(){
       if (o.action==='code') ok({ ok:true, voted:[], mode:'시험' });
+      else if (o.action==='jlogin') ok({ ok:true, token:'demo', name:'미리보기' });
+      else if (o.action==='jdata') ok({ ok:true, name:'미리보기', criteria:['완성도','독창성','캘린더 적합성'], close:'2026-10-25T23:59:59+09:00',
+        entries:demoList().map(function(e){ e.proc=2; e.ext='외부 소스 없음'; return e; }), scores:store.get('demoScores')||{} });
+      else if (o.action==='jscore') { var sc=store.get('demoScores')||{}; sc[o.entry]={s1:o.s1,s2:o.s2,s3:o.s3,pick:o.pick,note:o.note,at:'방금'}; store.set('demoScores',sc); ok({ ok:true, at:'방금' }); }
       else { var e=demoList().filter(function(x){ return x.id===o.id; })[0]; ok({ ok:true, track:e.track, voted:[e.track], mode:'시험' }); }
     },500); });
     return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)})
@@ -275,7 +319,9 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     ['Cinema 4D','ZBrush'].forEach(function(t){
       var tab = document.querySelector('.tab[data-track="'+t+'"]');
       tab.querySelector('small').textContent = all.filter(function(e){ return e.track===t; }).length;
-      tab.querySelector('.done').textContent = mine[t] ? '✓ 투표함' : '';
+      tab.querySelector('.done').textContent = state.judge
+        ? all.filter(function(e){ return e.track===t && state.judge.scores[e.id]; }).length + '/' + all.filter(function(e){ return e.track===t; }).length + ' 심사'
+        : (mine[t] ? '✓ 투표함' : '');
       tab.setAttribute('aria-selected', String(t===state.track));
     });
     state.list = all.filter(function(e){ return e.track===state.track; });
@@ -288,7 +334,9 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
       var im=document.createElement('img'); im.loading='lazy'; im.alt=e.title; im.src=img(e.id,600);
       im.onload=function(){ im.classList.add('on'); };
       th.appendChild(im);
-      if (mine[e.track]===e.id){ var bd=document.createElement('span'); bd.className='badge'; bd.textContent='내 투표'; th.appendChild(bd); }
+      if (state.judge){ var sc=state.judge.scores[e.id], jb=document.createElement('span');
+        jb.className='badge j'+(sc?'':' none'); jb.textContent= sc ? (Number(sc.s1)+Number(sc.s2)+Number(sc.s3))+'점'+(sc.pick?' · 추천':'') : '미심사'; th.appendChild(jb); }
+      else if (mine[e.track]===e.id){ var bd=document.createElement('span'); bd.className='badge'; bd.textContent='내 투표'; th.appendChild(bd); }
       var m=document.createElement('div'); m.className='meta';
       var t=document.createElement('div'); t.className='t'; t.textContent=e.title;
       var a=document.createElement('div'); a.className='a'; a.textContent=e.artist;
@@ -310,6 +358,14 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     else if (mine[e.track]===e.id){ v.disabled=true; v.className='btn ok'; v.textContent='✓ 이 작품에 투표했습니다'; }
     else if (mine[e.track]){ v.disabled=true; v.textContent=e.track+' 부문 투표 완료'; }
     else { v.disabled=false; v.textContent='이 작품에 투표'; }
+    $('#mVote').hidden = !!state.judge;
+    $('#mExt').textContent = state.judge && e.ext ? '외부 소스 · ' + e.ext : '';
+    var pr=$('#mProc'); pr.innerHTML='';
+    if (state.judge) {
+      if (e.proc) { var h=document.createElement('h4'); h.textContent='제작 과정 자료 ' + e.proc + '장 (심사위원에게만 보임)'; pr.appendChild(h); }
+      for (var k=0;k<(e.proc||0);k++){ var pi=document.createElement('img'); pi.loading='lazy'; pi.alt='과정 자료 '+(k+1); pi.src=pimg(e.id,k); pr.appendChild(pi); }
+      judgePanel(e);
+    } else $('#jPanel').hidden=true;
     $('#modal').classList.add('on'); document.body.style.overflow='hidden';
     $('#modal').scrollTop=0;
     history.replaceState(null,'','#e-'+e.id);
@@ -319,6 +375,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
   $('#mPrev').onclick=function(){ openEntry((state.cur-1+state.list.length)%state.list.length); };
   $('#mNext').onclick=function(){ openEntry((state.cur+1)%state.list.length); };
   document.addEventListener('keydown',function(ev){
+    if ($('#jdlg').classList.contains('on')) { if(ev.key==='Escape') $('#jdlg').classList.remove('on'); return; }
     if ($('#dlg').classList.contains('on')) { if(ev.key==='Escape') closeDlg(); return; }
     if (!$('#modal').classList.contains('on')) return;
     if (ev.key==='Escape') closeEntry();
@@ -403,11 +460,84 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     return out;
   }
 
+  /* 심사위원 */
+  function judgePanel(e){
+    var J=state.judge, sc=J.scores[e.id]||{}, cur=[Number(sc.s1)||0, Number(sc.s2)||0, Number(sc.s3)||0];
+    var P=$('#jPanel'); P.hidden=false; P.innerHTML='';
+    var h=document.createElement('h4'); h.textContent='심사 · ' + J.name + (sc.at ? ' · 저장됨 ' + sc.at : ' · 아직 저장 안 함'); P.appendChild(h);
+    var total=document.createElement('span'); total.className='total';
+    function upd(){ total.textContent = '합계 ' + (cur[0]+cur[1]+cur[2]) + ' / 30'; }
+    J.criteria.forEach(function(name,ci){
+      var box=document.createElement('div'); box.className='crit';
+      var lb=document.createElement('div'); lb.className='lb'; lb.innerHTML='<span></span><b></b>';
+      lb.firstChild.textContent=name; lb.lastChild.textContent= cur[ci] ? cur[ci]+'점' : '–';
+      var pips=document.createElement('div'); pips.className='pips';
+      for (var v=1; v<=10; v++){ (function(v){
+        var b=document.createElement('button'); b.type='button'; b.textContent=v; if (v===cur[ci]) b.className='on';
+        b.onclick=function(){ cur[ci]=v; pips.querySelectorAll('button').forEach(function(x,xi){ x.className = xi+1===v ? 'on' : ''; }); lb.lastChild.textContent=v+'점'; upd(); };
+        pips.appendChild(b); })(v); }
+      box.appendChild(lb); box.appendChild(pips); P.appendChild(box);
+    });
+    var pk=document.createElement('label'); pk.className='pick'; pk.innerHTML='<input type="checkbox"> 캘린더 수록 추천';
+    pk.firstChild.checked=!!sc.pick; P.appendChild(pk);
+    var ta=document.createElement('textarea'); ta.placeholder='의견 (선택) — 합평 때 참고합니다'; ta.value=sc.note||''; P.appendChild(ta);
+    var foot=document.createElement('div'); foot.className='foot';
+    var save=document.createElement('button'); save.className='btn'; save.textContent= sc.at ? '수정 저장' : '저장';
+    var msg=document.createElement('span'); msg.className='msg';
+    foot.appendChild(save); foot.appendChild(total); P.appendChild(foot); P.appendChild(msg); upd();
+    save.onclick=function(){
+      if (!cur[0]||!cur[1]||!cur[2]) { msg.className='msg'; msg.textContent='세 항목 모두 점수를 골라 주십시오.'; return; }
+      save.disabled=true; save.textContent='저장 중…';
+      post({action:'jscore', token:judge.token, entry:e.id, s1:cur[0], s2:cur[1], s3:cur[2], pick:pk.firstChild.checked, note:ta.value}).then(function(r){
+        save.disabled=false;
+        if (!r.ok) { save.textContent='저장'; msg.className='msg'; msg.textContent=r.error; if (r.relogin) judgeOut(); return; }
+        J.scores[e.id]={ s1:cur[0], s2:cur[1], s3:cur[2], pick:pk.firstChild.checked, note:ta.value, at:r.at };
+        save.textContent='수정 저장'; msg.className='msg good'; msg.textContent='저장했습니다. 10월 25일까지 고칠 수 있습니다.';
+        h.textContent='심사 · ' + J.name + ' · 저장됨 ' + r.at; render(); judgeProg(); toast('저장했습니다');
+      });
+    };
+  }
+  function judgeProg(){
+    var n=state.data.entries.length, d=state.data.entries.filter(function(e){ return state.judge.scores[e.id]; }).length;
+    $('#jProg').textContent='심사 ' + d + ' / ' + n + ' 작품';
+  }
+  function enterJudge(){
+    return post({action:'jdata', token:judge.token}).then(function(r){
+      if (!r.ok) { judgeOut(); return; }
+      state.judge={ name:r.name, criteria:r.criteria, scores:r.scores||{} };
+      state.data.entries = r.entries;
+      document.body.classList.add('judge');
+      $('#judgeBar').hidden=false; $('#jName').textContent='심사위원 ' + r.name + '님';
+      $('#jLink').hidden=true; $('#tabs').hidden=false; $('#empty').hidden=true;
+      $('#status').className='status live'; $('#status').lastChild.textContent='심사 모드 · 점수는 10월 25일까지 저장·수정할 수 있습니다';
+      judgeProg(); render(); window.scrollTo(0,0);
+    });
+  }
+  function judgeOut(){ judge=null; state.judge=null; try { sessionStorage.removeItem('cal27judge'); } catch(e){} location.replace(location.pathname + location.search); }
+  $('#jOut').onclick=judgeOut;
+  $('#jLink').onclick=function(){ $('#jmsg').textContent=''; $('#jdlg').classList.add('on'); setTimeout(function(){ $('#jid').focus(); },50); };
+  $('#jCancel').onclick=function(){ $('#jdlg').classList.remove('on'); };
+  $('#jpw').addEventListener('keydown',function(ev){ if(ev.key==='Enter') $('#jGo').onclick(); });
+  $('#jGo').onclick=function(){
+    var b=$('#jGo'); b.disabled=true; b.textContent='확인 중…';
+    post({action:'jlogin', id:$('#jid').value, pw:$('#jpw').value}).then(function(r){
+      b.disabled=false; b.textContent='로그인';
+      if (!r.ok) { $('#jmsg').textContent=r.error; return; }
+      judge={ token:r.token, name:r.name }; try { sessionStorage.setItem('cal27judge', JSON.stringify(judge)); } catch(e){}
+      $('#jdlg').classList.remove('on'); $('#jpw').value='';
+      enterJudge();
+    });
+  };
+
   /* 시작 */
   (DEMO ? Promise.resolve({ ok:true, open:'2026-10-01T00:00:00+09:00', close:'2026-10-22T23:59:59+09:00', paused:false, entries:demoList() })
         : fetch(API+'?action=list').then(function(r){ return r.json(); })).then(function(D){
     if (!D || !D.ok) throw new Error();
     state.data=D; setStatus(); setInterval(setStatus,60000);
+    if (judge && judge.token) return enterJudge().then(function(){
+      var m=location.hash.match(/^#e-(.+)$/), t=state.judge && m && state.data.entries.filter(function(e){ return e.id===decodeURIComponent(m[1]); })[0];
+      if (t) { state.track=t.track; render(); openEntry(state.list.indexOf(t)); }
+    });
     if (phase==='before') {
       $('#empty').hidden=false; $('#empty').textContent='검수를 통과한 작품은 10월 14일(수) 00:00에 이곳에 공개됩니다.';
       return;

@@ -30,12 +30,14 @@ function voteGet_(e) {
   var p = e.parameter || {};
   if (p.action === 'list') return json_(voteList_());
   if (p.action === 'img') return json_(voteImg_(p.id, p.w));
+  if (p.action === 'pimg') return json_(judgeImg_(p));   // 심사위원 전용 과정 자료 (Judge.gs)
   return null;
 }
 
 function votePost_(p) {
   if (p.action === 'code') return json_(voteCode_(p));
   if (p.action === 'vote') return json_(voteCast_(p));
+  if (/^j/.test(p.action || '')) return judgePost_(p);   // 심사위원 (Judge.gs)
   return null;
 }
 
@@ -51,7 +53,8 @@ function publicEntries_() {
   var h = v[0].map(function (x) { return String(x).trim(); });
   var c = function (name) { return h.indexOf(name); };
   var cPub = c('공개'), cId = c('접수번호'), cTrack = c('응모부문'), cTitle = c('작품제목'),
-      cArtist = c('활동명'), cSw = c('사용소프트웨어'), cDesc = c('작업설명'), cImg = c('작품이미지 링크');
+      cArtist = c('활동명'), cSw = c('사용소프트웨어'), cDesc = c('작업설명'), cImg = c('작품이미지 링크'),
+      cProc = c('과정자료 링크'), cExt = c('외부소스'), cExtD = c('외부소스상세');
   if (cPub < 0) return [];
 
   var list = [];
@@ -67,7 +70,9 @@ function publicEntries_() {
       artist: String(r[cArtist] || '응모자'),
       sw: String(r[cSw] || ''),
       desc: String(r[cDesc] || ''),
-      file: m[1]
+      file: m[1],
+      proc: (String(cProc >= 0 ? r[cProc] : '').match(/\/d\/[\w-]{20,}/g) || []).map(function (u) { return u.slice(3); }),
+      ext: [cExt >= 0 ? r[cExt] : '', cExtD >= 0 ? r[cExtD] : ''].filter(String).join(' · ')
     });
   }
   cache.put('entries', JSON.stringify(list), 300);
@@ -89,19 +94,23 @@ function voteList_() {
 function voteImg_(id, w) {
   var x = publicEntries_().filter(function (e) { return e.id === id; })[0];
   if (!x) return { ok: false, error: 'not found' };
+  return driveImg_(x.file, w);
+}
+
+function driveImg_(fileId, w) {
   var size = Math.min(Math.max(parseInt(w, 10) || 800, 200), 2000);
   var token = ScriptApp.getOAuthToken();
   var auth = { headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true };
   var blob = null;
   try {
-    var meta = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + x.file + '?fields=thumbnailLink&supportsAllDrives=true', auth);
+    var meta = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?fields=thumbnailLink&supportsAllDrives=true', auth);
     var link = JSON.parse(meta.getContentText()).thumbnailLink;
     if (link) {
       var res = UrlFetchApp.fetch(link.replace(/=s\d+$/, '') + '=s' + size, auth);
       if (res.getResponseCode() === 200) blob = res.getBlob();
     }
   } catch (err) { console.error('thumb', err); }
-  if (!blob) blob = DriveApp.getFileById(x.file).getBlob();   // 축소본을 못 받으면 원본
+  if (!blob) blob = DriveApp.getFileById(fileId).getBlob();   // 축소본을 못 받으면 원본
   if (blob.getBytes().length > 3200000) return { ok: false, error: 'image too large' };
   return { ok: true, type: blob.getContentType() || 'image/jpeg', data: Utilities.base64Encode(blob.getBytes()) };
 }
@@ -235,6 +244,7 @@ function voteCast_(p) {
 function setupVote() {
   var ss = SpreadsheetApp.openById(SHEET_ID);
   voteSheet_();
+  setupJudge_();   // 심사위원 계정·심사 탭 (Judge.gs)
   var t = ss.getSheetByName(TALLY_SHEET) || ss.insertSheet(TALLY_SHEET);
   t.clear();
   t.getRange('A1').setValue('정식 투표만 집계 (시험 투표 제외). 마감까지 외부 비공개.');

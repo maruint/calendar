@@ -30,16 +30,29 @@ module.exports = async (req, res) => {
         res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=31536000, immutable');
         return res.status(200).send(Buffer.from(j.data, 'base64'));
       }
+      if (action === 'pimg' && id) {
+        const { n, t } = req.query;
+        const size = Math.min(Math.max(parseInt(w, 10) || 1600, 200), 2000);
+        const r = await fetch(GAS + '?action=pimg&id=' + encodeURIComponent(id) + '&n=' + (parseInt(n, 10) || 0)
+          + '&t=' + encodeURIComponent(t || '') + '&w=' + size, { redirect: 'follow' });
+        const j = await r.json();
+        res.setHeader('Cache-Control', 'private, no-store');
+        if (!j.ok) return res.status(404).send('not found');
+        res.setHeader('Content-Type', j.type || 'image/jpeg');
+        return res.status(200).send(Buffer.from(j.data, 'base64'));
+      }
       return res.status(400).json({ ok: false, error: 'bad request' });
     }
 
     if (req.method === 'POST') {
       const p = await readJson(req);
-      if (p.action !== 'code' && p.action !== 'vote') return res.status(400).json({ ok: false, error: 'bad request' });
+      const ACTIONS = ['code', 'vote', 'jlogin', 'jdata', 'jscore'];
+      if (ACTIONS.indexOf(p.action) < 0) return res.status(400).json({ ok: false, error: 'bad request' });
       const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.headers['x-real-ip'] || '';
       const body = {
         action: p.action, email: p.email, code: p.code, id: p.id,
-        device: p.device, preview: !!p.preview, ip
+        device: p.device, preview: !!p.preview, ip,
+        pw: p.pw, token: p.token, entry: p.entry, s1: p.s1, s2: p.s2, s3: p.s3, pick: !!p.pick, note: p.note
       };
       const r = await fetch(GAS, {
         method: 'POST', redirect: 'follow',

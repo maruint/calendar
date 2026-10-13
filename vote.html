@@ -115,6 +115,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
 </head>
 <body>
 <div id="previewBar" class="preview" hidden>시험 모드 — 여기서 한 투표는 「시험」으로 기록되며 집계에 들어가지 않습니다.</div>
+<div id="demoBar" class="preview" hidden>화면 미리보기 — 샘플 작품(2021 캘린더 수록작)입니다. 인증번호는 아무 6자리나 넣으면 되고, 메일·투표 기록은 남지 않습니다.</div>
 <header class="top"><div class="wrap bar">
   <a href="/">← 2027 캘린더 공모전</a><span>MARU INTERNATIONAL · MAXON KR</span>
 </div></header>
@@ -210,7 +211,8 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
 <script>
 (function(){
   var API = '/api/vote';
-  var PREVIEW = /[?&]preview=1/.test(location.search);
+  var DEMO = /[?&]demo=1/.test(location.search);
+  var PREVIEW = DEMO || /[?&]preview=1/.test(location.search);
   var $ = function(s){ return document.querySelector(s); };
   var state = { data:null, track:'Cinema 4D', list:[], cur:-1, voting:null };
   var phase = 'loading';   // before | live | end
@@ -226,12 +228,18 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
   var sess = (function(){ try { return JSON.parse(sessionStorage.getItem('cal27sess')) || {}; } catch(e){ return {}; } })();
   function saveSess(){ try { sessionStorage.setItem('cal27sess', JSON.stringify(sess)); } catch(e){} }
 
-  if (PREVIEW) $('#previewBar').hidden = false;
+  if (DEMO) $('#demoBar').hidden = false; else if (PREVIEW) $('#previewBar').hidden = false;
 
   function toast(t){ var el=$('#toast'); el.textContent=t; el.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(function(){ el.style.display='none'; },2200); }
-  function img(id,w){ return API + '?action=img&id=' + encodeURIComponent(id) + '&w=' + w; }
+  function img(id,w){
+    if (DEMO) { var n=id.slice(-2); return '/past/2021/m' + n + (w<1000 ? '-s' : '') + '.webp'; }
+    return API + '?action=img&id=' + encodeURIComponent(id) + '&w=' + w; }
   function post(o){
     o.preview = PREVIEW; o.device = device;
+    if (DEMO) return new Promise(function(ok){ setTimeout(function(){
+      if (o.action==='code') ok({ ok:true, voted:[], mode:'시험' });
+      else { var e=demoList().filter(function(x){ return x.id===o.id; })[0]; ok({ ok:true, track:e.track, voted:[e.track], mode:'시험' }); }
+    },500); });
     return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)})
       .then(function(r){ return r.json(); })
       .catch(function(){ return { ok:false, error:'네트워크 오류입니다. 잠시 후 다시 시도해 주십시오.' }; });
@@ -384,8 +392,18 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     });
   };
 
+  function demoList(){
+    var titles=['겨울 정거장','빛의 정원','기계 고래','붉은 숲','물방울 도시','새벽의 등대','작은 우주','모래 시계','유리 새','마지막 열차','달의 정원사','시간의 문'];
+    var out=[];
+    for (var i=1;i<=12;i++){ var n=(i<10?'0':'')+i; out.push({ id:'demo_'+n, track: i<=6?'Cinema 4D':'ZBrush', title:titles[i-1],
+      artist:['3D아티스트','studio_k','모델러 J','pixel_lee','하늘조형','N.Park'][(i-1)%6], sw: i<=6?'Cinema 4D 2025, Redshift':'ZBrush 2025, KeyShot',
+      desc:'샘플 작품 설명입니다. 실제 화면에서는 응모자가 접수 때 쓴 작업 설명이 이 자리에 나옵니다.\n여러 줄도 그대로 보입니다.' }); }
+    return out;
+  }
+
   /* 시작 */
-  fetch(API+'?action=list').then(function(r){ return r.json(); }).then(function(D){
+  (DEMO ? Promise.resolve({ ok:true, open:'2026-10-01T00:00:00+09:00', close:'2026-10-22T23:59:59+09:00', paused:false, entries:demoList() })
+        : fetch(API+'?action=list').then(function(r){ return r.json(); })).then(function(D){
     if (!D || !D.ok) throw new Error();
     state.data=D; setStatus(); setInterval(setStatus,60000);
     if (phase==='before') {

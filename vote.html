@@ -246,6 +246,8 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     <p class="sub">주최 측에서 전달받은 아이디와 비밀번호를 입력해 주십시오.</p>
     <label for="jid">아이디</label><input id="jid" autocomplete="username" autocapitalize="off">
     <label for="jpw">비밀번호</label><input id="jpw" type="password" autocomplete="current-password">
+    <label for="jperson">심사자 이름</label><input id="jperson" autocomplete="name" placeholder="예: 홍길동" maxlength="20">
+    <div class="agree">한 계정을 여러 분이 함께 쓰셔도 이름별로 따로 저장됩니다.</div>
     <div class="msg" id="jmsg"></div>
     <div class="row"><button class="btn ghost" id="jCancel">취소</button><button class="btn" id="jGo">로그인</button></div>
   </div>
@@ -546,10 +548,12 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
   $('#jOut').onclick=judgeOut;
   $('#jLink').onclick=function(){ $('#jmsg').textContent=''; $('#jdlg').classList.add('on'); setTimeout(function(){ $('#jid').focus(); },50); };
   $('#jCancel').onclick=function(){ $('#jdlg').classList.remove('on'); };
-  $('#jpw').addEventListener('keydown',function(ev){ if(ev.key==='Enter') $('#jGo').onclick(); });
+  $('#jpw').addEventListener('keydown',function(ev){ if(ev.key==='Enter') $('#jperson').focus(); });
+  $('#jperson').addEventListener('keydown',function(ev){ if(ev.key==='Enter') $('#jGo').onclick(); });
   $('#jGo').onclick=function(){
     var b=$('#jGo'); b.disabled=true; b.textContent='확인 중…';
-    post({action:'jlogin', id:$('#jid').value, pw:$('#jpw').value}).then(function(r){
+    if (!$('#jperson').value.trim()) { $('#jmsg').textContent='심사자 이름을 입력해 주십시오.'; b.disabled=false; b.textContent='로그인'; return; }
+    post({action:'jlogin', id:$('#jid').value, pw:$('#jpw').value, person:$('#jperson').value.trim()}).then(function(r){
       b.disabled=false; b.textContent='로그인';
       if (!r.ok) { $('#jmsg').textContent=r.error; return; }
       judge={ token:r.token, name:r.name }; try { sessionStorage.setItem('cal27judge', JSON.stringify(judge)); } catch(e){}

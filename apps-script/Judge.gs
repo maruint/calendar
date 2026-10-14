@@ -51,18 +51,26 @@ function judgeLogin_(p) {
     return { ok: false, error: '로그인 시도가 너무 많습니다. 10분 뒤에 다시 시도해 주십시오.' };
   var j = judges_().filter(function (x) { return x.id.toLowerCase() === id.toLowerCase() && x.pw === String(p.pw || ''); })[0];
   if (!j) return { ok: false, error: '아이디 또는 비밀번호가 맞지 않습니다.' };
+  // 한 계정을 여러 명이 함께 쓸 수 있도록 심사자 이름을 받아 사람마다 따로 기록 (2026-10-14 팀장님)
+  var person = String(p.person || '').replace(/[|\r\n]/g, ' ').trim().slice(0, 20);
+  if (!person) return { ok: false, error: '심사자 이름을 입력해 주십시오. (같은 계정을 여러 분이 쓰셔도 이름별로 따로 저장됩니다)', needPerson: true };
   var exp = Date.now() + 12 * 3600 * 1000;   // 12시간
-  var body = Utilities.base64EncodeWebSafe(j.id + '|' + exp).replace(/=+$/, '');
-  return { ok: true, token: body + '.' + sign_(body), name: j.name };
+  var body = Utilities.base64EncodeWebSafe(j.id + '|' + exp + '|' + person, Utilities.Charset.UTF_8).replace(/=+$/, '');
+  return { ok: true, token: body + '.' + sign_(body), name: j.name + ' · ' + person };
 }
 
 function judgeAuth_(token) {
   var t = String(token || '').split('.');
   if (t.length !== 2 || sign_(t[0]) !== t[1]) return null;
   var pad = t[0] + '==='.slice((t[0].length + 3) % 4);
-  var parts = Utilities.newBlob(Utilities.base64DecodeWebSafe(pad)).getDataAsString().split('|');
+  var parts = Utilities.newBlob(Utilities.base64DecodeWebSafe(pad)).getDataAsString('UTF-8').split('|');
   if (Number(parts[1]) < Date.now()) return null;
-  return judges_().filter(function (x) { return x.id === parts[0]; })[0] || null;   // 계정을 지우면 바로 막힘
+  var j = judges_().filter(function (x) { return x.id === parts[0]; })[0];   // 계정을 지우면 바로 막힘
+  if (!j) return null;
+  var person = parts[2] || '';
+  return { id: j.id, pw: j.pw, person: person,
+    name: person ? j.name + ' · ' + person : j.name,
+    key: person ? j.id + '/' + person : j.id };
 }
 
 function scoreSheet_() {
@@ -80,7 +88,7 @@ function myScores_(j) {
   var sh = scoreSheet_(), out = {};
   if (sh.getLastRow() < 2) return out;
   sh.getRange(2, 1, sh.getLastRow() - 1, SCORE_HEADER.length).getValues().forEach(function (r) {
-    if (String(r[12]).indexOf(j.id + '|') !== 0) return;
+    if (String(r[12]).indexOf(j.key + '|') !== 0) return;
     out[String(r[2])] = { s1: r[6], s2: r[7], s3: r[8], pick: r[10] === 'O', note: String(r[11] || ''), at: String(r[0]) };
   });
   return out;
@@ -102,7 +110,7 @@ function judgeScore_(j, p) {
   if (!x) return { ok: false, error: '작품을 찾을 수 없습니다.' };
   var s = [p.s1, p.s2, p.s3].map(function (v) { return parseInt(v, 10); });
   if (s.some(function (v) { return !(v >= 1 && v <= 10); })) return { ok: false, error: '세 항목 모두 1~10점으로 매겨 주십시오.' };
-  var key = j.id + '|' + x.id;
+  var key = j.key + '|' + x.id;
   var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
   var row = [now, j.name, x.id, x.track, x.title, x.artist, s[0], s[1], s[2], s[0] + s[1] + s[2],
     p.pick ? 'O' : '', String(p.note || '').slice(0, 2000), key];

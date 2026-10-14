@@ -47,11 +47,25 @@ function votePost_(p) {
   return null;
 }
 
-/** 투표·심사에 쓰는 스프레드시트: 이 스크립트가 붙어 있는 시트가 있으면 그것, 없으면 SHEET_ID */
+/** 투표·심사에 쓰는 스프레드시트 (접수 시트) — 2026-10-14 팀장님 확인 */
+var VOTE_SS_ID = '1_Iph2kBcSI_LFgeh2bFwk5oXUPaRMSAFSOEPQN36nng';
+var VOTE_TAB_GID = 1556491049;   // 접수 탭
+
 function ss_() {
-  var active = null;
-  try { active = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) {}
-  return active || SpreadsheetApp.openById(SHEET_ID);
+  return SpreadsheetApp.openById(VOTE_SS_ID);
+}
+
+/** 접수 탭: 이름이 「접수」인 탭 → 주소의 gid 탭 → 「작품이미지 링크」 제목이 있는 첫 탭 */
+function entrySheet_() {
+  var ss = ss_(), sh = ss.getSheetByName(SHEET_NAME);
+  if (sh) return sh;
+  var all = ss.getSheets();
+  for (var i = 0; i < all.length; i++) if (all[i].getSheetId() === VOTE_TAB_GID) return all[i];
+  for (var j = 0; j < all.length; j++) {
+    var w = all[j].getLastColumn();
+    if (w && all[j].getRange(1, 1, 1, w).getValues()[0].map(String).indexOf('작품이미지 링크') >= 0) return all[j];
+  }
+  return null;
 }
 
 /* ── 공개 작품 ───────────────────────────────────────── */
@@ -103,8 +117,8 @@ function folderImages_(folderId) {
 }
 
 function scanEntries_() {
-  var sh = ss_().getSheetByName(SHEET_NAME);
-  if (!sh) return { list: [], note: '「' + SHEET_NAME + '」 탭 없음' };
+  var sh = entrySheet_();
+  if (!sh) return { list: [], note: '접수 탭을 찾지 못함' };
   var range = sh.getDataRange(), v = range.getValues(), rich = range.getRichTextValues();
   var h = v[0].map(function (x) { return String(x).trim(); });
   var c = function (name) { return h.indexOf(name); };
@@ -147,7 +161,7 @@ function scanEntries_() {
 function checkVoteList() {
   CacheService.getScriptCache().remove('entries');
   var s = scanEntries_();
-  Logger.log('읽은 시트: ' + ss_().getName() + ' (' + ss_().getId() + ')');
+  Logger.log('읽은 시트: ' + ss_().getName() + ' · 탭 ' + (entrySheet_() ? entrySheet_().getName() : '없음'));
   Logger.log('공개 작품 ' + s.list.length + '점' + (s.note ? ' · ' + s.note : ''));
   if (s.skipped && s.skipped.length) Logger.log('O 표시는 있지만 이미지를 못 찾은 행: ' + s.skipped.join(', '));
   s.list.forEach(function (e) { Logger.log(e.id + ' · ' + e.title + ' · 과정 자료 ' + e.proc.length + '장'); });

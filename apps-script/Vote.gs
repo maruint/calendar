@@ -344,7 +344,7 @@ function setupVote() {
   setupJudge_();   // 심사위원 계정·심사 탭 (Judge.gs)
   var t = ss.getSheetByName(TALLY_SHEET) || ss.insertSheet(TALLY_SHEET);
   t.clear();
-  t.getRange('A1').setValue('정식 투표만 집계 (시험 투표 제외). 1인 1표 · 득표 상위 2점이 인기상. 마감까지 외부 비공개.');
+  t.getRange('A1').setValue('정식 투표만 집계 (시험 투표 제외). 1인 1표 · 부문별 최다 득표작이 인기상. 마감까지 외부 비공개.');
   t.getRange('A3').setFormula("=IFERROR(QUERY('" + VOTE_SHEET + "'!A:F,\"select D, E, F, C, count(D) where B = '정식' group by D, E, F, C order by count(D) desc label count(D) '득표'\",1),\"아직 투표 없음\")");
   t.getRange('H3').setFormula("=IFERROR(QUERY('" + VOTE_SHEET + "'!A:C,\"select count(B) where B = '정식' label count(B) '총 투표수'\",1),\"\")");
 

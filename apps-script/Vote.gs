@@ -30,6 +30,12 @@ function voteGet_(e) {
   var p = e.parameter || {};
   if (p.action === 'list') return json_(voteList_());
   if (p.action === 'img') return json_(voteImg_(p.id, p.w));
+  if (p.action === 'diag') {   // 공개 작품 점검 (개인정보 없음)
+    CacheService.getScriptCache().remove('entries');
+    var d = scanEntries_();
+    return json_({ ok: true, count: d.list.length, skipped: d.skipped || [], note: d.note || '', headers: d.headers || [],
+      entries: d.list.map(function (e) { return { id: e.id, title: e.title, proc: e.proc.length }; }) });
+  }
   if (p.action === 'pimg') return json_(judgeImg_(p));   // 심사위원 전용 과정 자료 (Judge.gs)
   return null;
 }
@@ -48,35 +54,96 @@ function publicEntries_() {
   var hit = cache.get('entries');
   if (hit) return JSON.parse(hit);
 
+  var list = scanEntries_().list;
+  cache.put('entries', JSON.stringify(list), 300);
+  return list;
+}
+
+/** 「공개」 칸 값: 비어 있지 않고 X·N·미공개 같은 부정이 아니면 공개 (O·o·ㅇ·0·○·V 등 모두 허용) */
+function isPub_(v) {
+  var s = String(v == null ? '' : v).trim();
+  return !!s && !/^(x|×|n|no|false|미공개|비공개|제외|-)$/i.test(s);
+}
+
+/** 셀 글자 또는 셀에 걸린 링크에서 드라이브 파일/폴더 ID 뽑기 */
+function driveIds_(text, rich, kind) {
+  var urls = [String(text || '')];
+  if (rich) rich.getRuns().forEach(function (run) { if (run.getLinkUrl()) urls.push(run.getLinkUrl()); });
+  var re = kind === 'folder' ? /\/folders\/([\w-]{20,})/g : /(?:\/d\/|[?&]id=)([\w-]{20,})/g;
+  var out = [];
+  urls.join('\n').replace(re, function (_, id) { if (out.indexOf(id) < 0) out.push(id); return _; });
+  return out;
+}
+
+function isImage_(f) { return /^image\//.test(f.getMimeType()); }
+
+/** 접수 폴더 구조: 폴더 바로 아래 이미지 = 작품, making 폴더 안 이미지 = 과정 자료 */
+function folderImages_(folderId) {
+  var folder = DriveApp.getFolderById(folderId), work = [], proc = [];
+  var it = folder.getFiles();
+  while (it.hasNext()) { var f = it.next(); if (isImage_(f)) work.push(f); }
+  var mk = folder.getFolders();
+  while (mk.hasNext()) {
+    var sub = mk.next();
+    if (!/^making$/i.test(sub.getName().trim())) continue;
+    var it2 = sub.getFiles();
+    while (it2.hasNext()) { var g = it2.next(); if (isImage_(g)) proc.push(g); }
+  }
+  var byName = function (a, b) { return a.getName() < b.getName() ? -1 : 1; };
+  work.sort(function (a, b) { return b.getSize() - a.getSize(); });   // 작품이 여러 장이면 가장 큰 파일
+  proc.sort(byName);
+  return { work: work[0] ? work[0].getId() : null, proc: proc.map(function (f) { return f.getId(); }) };
+}
+
+function scanEntries_() {
   var sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
-  var v = sh.getDataRange().getValues();
+  if (!sh) return { list: [], note: '「' + SHEET_NAME + '」 탭 없음' };
+  var range = sh.getDataRange(), v = range.getValues(), rich = range.getRichTextValues();
   var h = v[0].map(function (x) { return String(x).trim(); });
   var c = function (name) { return h.indexOf(name); };
   var cPub = c('공개'), cId = c('접수번호'), cTrack = c('응모부문'), cTitle = c('작품제목'),
       cArtist = c('활동명'), cSw = c('사용소프트웨어'), cDesc = c('작업설명'), cImg = c('작품이미지 링크'),
-      cProc = c('과정자료 링크'), cExt = c('외부소스'), cExtD = c('외부소스상세');
-  if (cPub < 0) return [];
+      cProc = c('과정자료 링크'), cFolder = c('폴더 링크'), cExt = c('외부소스'), cExtD = c('외부소스상세');
+  if (cPub < 0) return { list: [], note: '「공개」 제목 칸 없음', headers: h };
 
-  var list = [];
+  var list = [], skipped = [];
   for (var i = 1; i < v.length; i++) {
     var r = v[i];
-    if (!/^(o|○|◯|y|yes|공개|v|✓|true)$/i.test(String(r[cPub]).trim())) continue;
-    var m = String(r[cImg]).match(/\/d\/([\w-]{20,})/) || String(r[cImg]).match(/[?&]id=([\w-]{20,})/);
-    if (!m) continue;
+    if (!isPub_(r[cPub])) continue;
+    var file = null, proc = [];
+    // 1) 접수 폴더(making 하위 폴더 포함)에서 찾기
+    var fids = cFolder >= 0 ? driveIds_(r[cFolder], rich[i][cFolder], 'folder') : [];
+    if (fids.length) {
+      try { var fi = folderImages_(fids[0]); file = fi.work; proc = fi.proc; }
+      catch (err) { console.error('folder ' + r[cId], err); }
+    }
+    // 2) 시트의 링크로 찾기
+    if (!file && cImg >= 0) file = driveIds_(r[cImg], rich[i][cImg], 'file')[0] || null;
+    if (!proc.length && cProc >= 0) proc = driveIds_(r[cProc], rich[i][cProc], 'file');
+    if (!file) { skipped.push((i + 1) + '행'); continue; }
     list.push({
-      id: String(r[cId]),
+      id: String(r[cId] || 'row' + (i + 1)),
       track: String(r[cTrack]).indexOf('ZBrush') >= 0 ? 'ZBrush' : 'Cinema 4D',
       title: String(r[cTitle] || '무제'),
       artist: String(r[cArtist] || '응모자'),
       sw: String(r[cSw] || ''),
       desc: String(r[cDesc] || ''),
-      file: m[1],
-      proc: (String(cProc >= 0 ? r[cProc] : '').match(/\/d\/[\w-]{20,}/g) || []).map(function (u) { return u.slice(3); }),
+      file: file,
+      proc: proc.filter(function (id) { return id !== file; }),
       ext: [cExt >= 0 ? r[cExt] : '', cExtD >= 0 ? r[cExtD] : ''].filter(String).join(' · ')
     });
   }
-  cache.put('entries', JSON.stringify(list), 300);
-  return list;
+  return { list: list, skipped: skipped, headers: h };
+}
+
+/** 편집기에서 실행: 공개 작품이 왜 안 나오는지 로그로 보여 줌 */
+function checkVoteList() {
+  CacheService.getScriptCache().remove('entries');
+  var s = scanEntries_();
+  Logger.log('공개 작품 ' + s.list.length + '점' + (s.note ? ' · ' + s.note : ''));
+  if (s.skipped && s.skipped.length) Logger.log('O 표시는 있지만 이미지를 못 찾은 행: ' + s.skipped.join(', '));
+  s.list.forEach(function (e) { Logger.log(e.id + ' · ' + e.title + ' · 과정 자료 ' + e.proc.length + '장'); });
+  Logger.log('제목 줄: ' + (s.headers || []).join(' | '));
 }
 
 function voteList_() {

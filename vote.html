@@ -558,6 +558,8 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     });
   };
 
+  if (/^#judge$/.test(location.hash) && !(judge && judge.token)) setTimeout(function(){ $('#jLink').onclick(); }, 300);   // 심사위원 바로가기: vote.html#judge
+
   /* 시작 */
   (DEMO ? Promise.resolve({ ok:true, open:'2026-10-01T00:00:00+09:00', close:'2026-10-22T23:59:59+09:00', paused:false, entries:demoList() })
         : fetch(API+'?action=list').then(function(r){ return r.json(); })).then(function(D){

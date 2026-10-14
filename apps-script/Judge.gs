@@ -38,7 +38,7 @@ function sign_(text) {
 }
 
 function judges_() {
-  var sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName(JUDGE_SHEET);
+  var sh = ss_().getSheetByName(JUDGE_SHEET);
   if (!sh || sh.getLastRow() < 2) return [];
   return sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues()
     .filter(function (r) { return String(r[0]).trim() && String(r[1]).trim(); })
@@ -66,7 +66,7 @@ function judgeAuth_(token) {
 }
 
 function scoreSheet_() {
-  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var ss = ss_();
   var sh = ss.getSheetByName(SCORE_SHEET);
   if (!sh) {
     sh = ss.insertSheet(SCORE_SHEET);
@@ -132,7 +132,7 @@ function judgeImg_(p) {
 
 /** setupVote() 에서 부름: 심사위원 계정 탭과 심사집계 탭 */
 function setupJudge_() {
-  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var ss = ss_();
   if (!ss.getSheetByName(JUDGE_SHEET)) {
     var sh = ss.insertSheet(JUDGE_SHEET);
     var pw = function () { return Utilities.getUuid().replace(/-/g, '').slice(0, 8); };

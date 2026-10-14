@@ -33,7 +33,7 @@ function voteGet_(e) {
   if (p.action === 'diag') {   // 공개 작품 점검 (개인정보 없음)
     CacheService.getScriptCache().remove('entries');
     var d = scanEntries_();
-    return json_({ ok: true, count: d.list.length, skipped: d.skipped || [], note: d.note || '', headers: d.headers || [],
+    return json_({ ok: true, sheet: ss_().getName(), count: d.list.length, skipped: d.skipped || [], note: d.note || '', headers: d.headers || [],
       entries: d.list.map(function (e) { return { id: e.id, title: e.title, proc: e.proc.length }; }) });
   }
   if (p.action === 'pimg') return json_(judgeImg_(p));   // 심사위원 전용 과정 자료 (Judge.gs)
@@ -45,6 +45,13 @@ function votePost_(p) {
   if (p.action === 'vote') return json_(voteCast_(p));
   if (/^j/.test(p.action || '')) return judgePost_(p);   // 심사위원 (Judge.gs)
   return null;
+}
+
+/** 투표·심사에 쓰는 스프레드시트: 이 스크립트가 붙어 있는 시트가 있으면 그것, 없으면 SHEET_ID */
+function ss_() {
+  var active = null;
+  try { active = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) {}
+  return active || SpreadsheetApp.openById(SHEET_ID);
 }
 
 /* ── 공개 작품 ───────────────────────────────────────── */
@@ -96,7 +103,7 @@ function folderImages_(folderId) {
 }
 
 function scanEntries_() {
-  var sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  var sh = ss_().getSheetByName(SHEET_NAME);
   if (!sh) return { list: [], note: '「' + SHEET_NAME + '」 탭 없음' };
   var range = sh.getDataRange(), v = range.getValues(), rich = range.getRichTextValues();
   var h = v[0].map(function (x) { return String(x).trim(); });
@@ -140,6 +147,7 @@ function scanEntries_() {
 function checkVoteList() {
   CacheService.getScriptCache().remove('entries');
   var s = scanEntries_();
+  Logger.log('읽은 시트: ' + ss_().getName() + ' (' + ss_().getId() + ')');
   Logger.log('공개 작품 ' + s.list.length + '점' + (s.note ? ' · ' + s.note : ''));
   if (s.skipped && s.skipped.length) Logger.log('O 표시는 있지만 이미지를 못 찾은 행: ' + s.skipped.join(', '));
   s.list.forEach(function (e) { Logger.log(e.id + ' · ' + e.title + ' · 과정 자료 ' + e.proc.length + '장'); });
@@ -248,7 +256,7 @@ function voteCode_(p) {
 /* ── 투표 ───────────────────────────────────────────── */
 
 function voteSheet_() {
-  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var ss = ss_();
   var sh = ss.getSheetByName(VOTE_SHEET);
   if (!sh) {
     sh = ss.insertSheet(VOTE_SHEET);
@@ -309,7 +317,7 @@ function voteCast_(p) {
 
 /** 처음 한 번 실행: 「투표」·「집계」 탭, 개인정보 삭제 예약 */
 function setupVote() {
-  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var ss = ss_();
   voteSheet_();
   setupJudge_();   // 심사위원 계정·심사 탭 (Judge.gs)
   var t = ss.getSheetByName(TALLY_SHEET) || ss.insertSheet(TALLY_SHEET);
@@ -336,7 +344,7 @@ function refreshVoteList() {
 
 /** 결과 발표 1개월 뒤 자동 실행: 투표자 이메일·중복확인키·IP·기기 칸을 지움 (득표 기록은 남음) */
 function purgeVoterInfo() {
-  var sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName(VOTE_SHEET);
+  var sh = ss_().getSheetByName(VOTE_SHEET);
   if (!sh || sh.getLastRow() < 2) return;
   sh.getRange(2, 7, sh.getLastRow() - 1, 4).clearContent();
 }

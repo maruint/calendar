@@ -1,7 +1,7 @@
 // 인기상 투표 중계: 브라우저 → /api/vote → Apps Script (Vote.gs)
 // - 목록·이미지는 Vercel CDN에 캐시해 Apps Script 호출을 줄인다
 // - 인증·투표 요청에는 접속 IP를 붙여 넘긴다 (속도 제한·사후 점검용)
-const GAS = 'https://script.google.com/macros/s/AKfycby7pDCQ7fmFuBBhCuZ9Kjrh2dI6wEg5-8SVtdImbGhZKQx4OinnafD2otwZePF6NgVt/exec';
+const GAS = 'https://script.google.com/macros/s/AKfycbyyb-7OEwCvattvn_cC-FcbGp4o6DLTOdGmi8Gx3PM3oTut77Xj69J7qAoBdZMOh-Lj/exec';
 
 async function readJson(req) {
   if (req.body && typeof req.body === 'object') return req.body;

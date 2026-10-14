@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
       if (action === 'list') {
         const r = await fetch(GAS + '?action=list', { redirect: 'follow' });
         const j = await r.json();
-        res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+        res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=30');
         return res.status(200).json(j);
       }
       if (action === 'img' && id) {

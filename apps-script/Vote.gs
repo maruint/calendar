@@ -19,7 +19,7 @@ var VOTE_PAUSED = false;                                  // 비상시 true 로 
 
 var VOTE_SHEET = '투표';
 var TALLY_SHEET = '집계';
-var VOTE_HEADER = ['시각', '구분', '부문', '접수번호', '작품제목', '활동명', '이메일', '중복확인키', 'IP', '기기'];
+var VOTE_HEADER = ['시각', '구분', '부문', '접수번호', '작품제목', '활동명', '이메일/휴대폰', '중복확인키', 'IP', '기기'];
 
 var DISPOSABLE = ['mailinator.com', 'guerrillamail.com', 'guerrillamail.net', 'sharklasers.com', '10minutemail.com',
   '10minutemail.net', 'temp-mail.org', 'tempmail.com', 'tempmail.net', 'yopmail.com', 'yopmail.net', 'getnada.com',
@@ -180,7 +180,7 @@ function voteList_() {
   return {
     ok: true,
     open: VOTE_OPEN.toISOString(), close: VOTE_CLOSE.toISOString(),
-    paused: VOTE_PAUSED, now: now.toISOString(),
+    paused: VOTE_PAUSED, now: now.toISOString(), auth: authMode_(null), ipLimit: ipLimit_(),
     entries: publicEntries_().map(function (x) {
       return { id: x.id, track: x.track, title: x.title, artist: x.artist, sw: x.sw, desc: x.desc,
         proc: x.procPublic ? x.proc.length : 0 };
@@ -217,7 +217,39 @@ function driveImg_(fileId, w) {
   return { ok: true, type: blob.getContentType() || 'image/jpeg', data: Utilities.base64Encode(blob.getBytes()) };
 }
 
-/* ── 인증번호 ───────────────────────────────────────── */
+/* ── 인증 (이메일 / 휴대폰) ─────────────────────────────── */
+/*
+ * 인증 방식 전환: 편집기에서 usePhoneAuth() 또는 useEmailAuth() 를 ▶ 실행 (재배포 필요 없음)
+ * 휴대폰 문자(솔라피) 키: 프로젝트 설정(톱니바퀴) → 스크립트 속성에
+ *   SOLAPI_KEY, SOLAPI_SECRET, SOLAPI_FROM(등록된 발신번호, 숫자만) 을 넣는다.
+ * IP 제한: 스크립트 속성 IP_LIMIT (기본 1 = 같은 인터넷 주소에서 1표, 0 = 제한 없음)
+ */
+function prop_(k, d) { var v = PropertiesService.getScriptProperties().getProperty(k); return v == null || v === '' ? d : v; }
+
+function authMode_(p) {
+  var m = prop_('AUTH_MODE', 'email');
+  if (p && p.preview && (p.auth === 'phone' || p.auth === 'email')) m = p.auth;   // 시험 모드에서만 방식 지정 가능
+  return m === 'phone' ? 'phone' : 'email';
+}
+function ipLimit_() { return Math.max(0, parseInt(prop_('IP_LIMIT', '1'), 10) || 0); }
+
+function usePhoneAuth() {
+  var P = PropertiesService.getScriptProperties();
+  if (!P.getProperty('SOLAPI_KEY') || !P.getProperty('SOLAPI_SECRET') || !P.getProperty('SOLAPI_FROM'))
+    throw new Error('스크립트 속성에 SOLAPI_KEY · SOLAPI_SECRET · SOLAPI_FROM 을 먼저 넣어 주십시오.');
+  P.setProperty('AUTH_MODE', 'phone');
+  Logger.log('휴대폰 인증으로 전환했습니다. (1분 안에 투표 화면에 반영)');
+}
+function useEmailAuth() {
+  PropertiesService.getScriptProperties().setProperty('AUTH_MODE', 'email');
+  Logger.log('이메일 인증으로 전환했습니다.');
+}
+/** 문자 발송 시험: 아래 번호를 팀장님 번호로 바꿔 실행 */
+function testSms() {
+  var to = '01000000000';
+  sendSms_(to, '[MAXON 캘린더 공모전] 문자 발송 시험입니다.');
+  Logger.log('보냄: ' + to);
+}
 
 function normEmail_(s) {
   var e = String(s || '').trim().toLowerCase();
@@ -225,7 +257,43 @@ function normEmail_(s) {
   var at = e.lastIndexOf('@'), local = e.slice(0, at), dom = e.slice(at + 1);
   local = local.split('+')[0];
   if (dom === 'gmail.com' || dom === 'googlemail.com') { local = local.replace(/\./g, ''); dom = 'gmail.com'; }
-  return { addr: e, key: local + '@' + dom, domain: dom };
+  return { addr: e, key: local + '@' + dom, domain: dom, kind: 'email' };
+}
+function normPhone_(s) {
+  var d = String(s || '').replace(/\D/g, '');
+  if (/^82/.test(d)) d = '0' + d.slice(2);
+  if (!/^01[016789]\d{7,8}$/.test(d)) return null;
+  return { addr: d, key: 'tel:' + d, kind: 'phone' };
+}
+/** 요청에서 투표자 확인값 꺼내기 */
+function ident_(p, mode) {
+  if (mode === 'phone') {
+    var t = normPhone_(p.phone || p.email);
+    return t ? t : { error: '휴대폰 번호를 확인해 주십시오. (예: 010-1234-5678)' };
+  }
+  var e = normEmail_(p.email);
+  if (!e) return { error: '이메일 주소를 확인해 주십시오.' };
+  if (DISPOSABLE.indexOf(e.domain) >= 0) return { error: '일회용 메일 주소로는 투표할 수 없습니다.' };
+  return e;
+}
+function who_(id) { return id.kind === 'phone' ? '이 휴대폰 번호는' : '이 이메일은'; }
+
+function sendSms_(to, text) {
+  var key = prop_('SOLAPI_KEY', ''), secret = prop_('SOLAPI_SECRET', ''), from = String(prop_('SOLAPI_FROM', '')).replace(/\D/g, '');
+  if (!key || !secret || !from) throw new Error('문자 발송 설정이 없습니다.');
+  var date = new Date().toISOString(), salt = Utilities.getUuid().replace(/-/g, '');
+  var sig = Utilities.computeHmacSha256Signature(date + salt, secret).map(function (b) {
+    return ('0' + (b & 0xff).toString(16)).slice(-2);
+  }).join('');
+  var res = UrlFetchApp.fetch('https://api.solapi.com/messages/v4/send', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { Authorization: 'HMAC-SHA256 apiKey=' + key + ', date=' + date + ', salt=' + salt + ', signature=' + sig },
+    payload: JSON.stringify({ message: { to: to, from: from, text: text } })
+  });
+  if (res.getResponseCode() !== 200) {
+    console.error('solapi', res.getResponseCode(), res.getContentText());
+    throw new Error('문자 발송 실패 (' + res.getResponseCode() + '): ' + res.getContentText().slice(0, 200));
+  }
 }
 
 function phase_(preview) {
@@ -244,40 +312,48 @@ function limited_(key, max, windowSec) {
   return n > max;
 }
 
+var IP_MSG = '같은 인터넷(IP)에서 이미 투표가 이루어졌습니다. 학교·회사처럼 여러 사람이 같은 인터넷을 쓰는 곳이라면 휴대폰 데이터(LTE·5G)로 접속해 다시 시도해 주십시오.';
+var NO_IP_MSG = '접속 정보를 확인할 수 없습니다. 투표 페이지에서 다시 시도해 주십시오.';
+
 function voteCode_(p) {
   var ph = phase_(p.preview);
   if (!ph.ok) return ph;
-  var em = normEmail_(p.email);
-  if (!em) return { ok: false, error: '이메일 주소를 확인해 주십시오.' };
-  if (DISPOSABLE.indexOf(em.domain) >= 0) return { ok: false, error: '일회용 메일 주소로는 투표할 수 없습니다.' };
+  var mode = authMode_(p), id = ident_(p, mode);
+  if (id.error) return { ok: false, error: id.error };
 
   var ip = String(p.ip || '').slice(0, 64);
-  if (ip && limited_('ipc:' + ip, 15, 600)) return { ok: false, error: '요청이 너무 많습니다. 10분 뒤에 다시 시도해 주십시오.' };
-  if (limited_('emc:' + em.key, 3, 600)) return { ok: false, error: '인증번호는 10분에 3번까지 받을 수 있습니다. 받은 메일함·스팸함을 확인해 주십시오.' };
+  if (!ip) return { ok: false, error: NO_IP_MSG };
+  if (limited_('ipc:' + ip, 15, 600)) return { ok: false, error: '요청이 너무 많습니다. 10분 뒤에 다시 시도해 주십시오.' };
+  if (limited_('idc:' + id.key, 3, 600)) return { ok: false, error: '인증번호는 10분에 3번까지 받을 수 있습니다.' + (mode === 'email' ? ' 받은 메일함·스팸함을 확인해 주십시오.' : '') };
 
-  var voted = votedTracks_(em.key, ph.mode);
-  if (voted.length >= 1) return { ok: false, error: '이 이메일은 이미 투표했습니다. (1인 1표)', already: true };
+  var voted = votedTracks_(id.key, ph.mode);
+  if (voted.length >= 1) return { ok: false, error: who_(id) + ' 이미 투표했습니다. (1인 1표)', already: true };
+  if (ipLimit_() && ipVotes_(ip, ph.mode) >= ipLimit_()) return { ok: false, error: IP_MSG, ipBlocked: true };
 
   var code = String(Math.floor(100000 + Math.random() * 900000));
-  CacheService.getScriptCache().put('code:' + em.key, JSON.stringify({ code: code, tries: 0 }), 1800);
+  CacheService.getScriptCache().put('code:' + id.key, JSON.stringify({ code: code, tries: 0 }), 1800);
 
-  var subject = '[2027 캘린더 공모전] 인기상 투표 인증번호 ' + code;
-  var text = '인증번호: ' + code + '\n\n투표 화면에 위 6자리 번호를 입력해 주십시오. 30분 동안 유효합니다.'
-    + '\n전체 작품 중 1작품에만 투표할 수 있습니다. (1인 1표)'
-    + '\n직접 요청하지 않았다면 이 메일은 무시하셔도 됩니다.\n\n마루인터내셔널 · 2027 캘린더 공모전';
-  var html = '<div style="font-family:sans-serif;font-size:14px;line-height:1.7;color:#222;max-width:520px">'
-    + '<p>2027 캘린더 공모전 인기상 투표 인증번호입니다.</p>'
-    + '<p style="font-size:30px;font-weight:700;letter-spacing:6px;margin:16px 0">' + code + '</p>'
-    + '<p>투표 화면에 위 6자리 번호를 입력해 주십시오. 30분 동안 유효합니다.<br>'
-    + '전체 작품 중 1작품에만 투표할 수 있습니다. (1인 1표)</p>'
-    + '<p style="color:#666;font-size:13px">직접 요청하지 않았다면 이 메일은 무시하셔도 됩니다.<br>마루인터내셔널 · 2027 캘린더 공모전</p></div>';
   try {
-    MailApp.sendEmail(em.addr, subject, text, { name: MAIL_SENDER_NAME, htmlBody: html });
+    if (mode === 'phone') {
+      sendSms_(id.addr, '[MAXON 캘린더 공모전] 인기상 투표 인증번호 [' + code + '] 30분 안에 입력해 주세요.');
+    } else {
+      var subject = '[MAXON 2027 캘린더 공모전] 인기상 투표 인증번호 ' + code;
+      var text = '인증번호: ' + code + '\n\n투표 화면에 위 6자리 번호를 입력해 주십시오. 30분 동안 유효합니다.'
+        + '\n전체 작품 중 1작품에만 투표할 수 있습니다. (1인 1표)'
+        + '\n직접 요청하지 않았다면 이 메일은 무시하셔도 됩니다.\n\n마루인터내셔널 · MAXON 2027 캘린더 공모전';
+      var html = '<div style="font-family:sans-serif;font-size:14px;line-height:1.7;color:#222;max-width:520px">'
+        + '<p>MAXON 2027 캘린더 공모전 인기상 투표 인증번호입니다.</p>'
+        + '<p style="font-size:30px;font-weight:700;letter-spacing:6px;margin:16px 0">' + code + '</p>'
+        + '<p>투표 화면에 위 6자리 번호를 입력해 주십시오. 30분 동안 유효합니다.<br>'
+        + '전체 작품 중 1작품에만 투표할 수 있습니다. (1인 1표)</p>'
+        + '<p style="color:#666;font-size:13px">직접 요청하지 않았다면 이 메일은 무시하셔도 됩니다.<br>마루인터내셔널 · MAXON 2027 캘린더 공모전</p></div>';
+      MailApp.sendEmail(id.addr, subject, text, { name: MAIL_SENDER_NAME, htmlBody: html });
+    }
   } catch (err) {
-    console.error('code mail failed', err);
-    return { ok: false, error: '메일을 보내지 못했습니다. 잠시 후 다시 시도해 주십시오.' };
+    console.error('code send failed', err);
+    return { ok: false, error: (mode === 'phone' ? '문자를' : '메일을') + ' 보내지 못했습니다. 잠시 후 다시 시도해 주십시오.' };
   }
-  return { ok: true, voted: voted, mode: ph.mode };
+  return { ok: true, voted: voted, mode: ph.mode, auth: mode };
 }
 
 /* ── 투표 ───────────────────────────────────────────── */
@@ -293,7 +369,7 @@ function voteSheet_() {
   return sh;
 }
 
-/** 이 이메일이 이미 투표한 부문 목록 */
+/** 이 투표자가 이미 투표한 부문 목록 */
 function votedTracks_(key, mode) {
   var sh = voteSheet_();
   var found = sh.getRange('H:H').createTextFinder(key + '|').matchEntireCell(false).findAll();
@@ -305,20 +381,31 @@ function votedTracks_(key, mode) {
   return out;
 }
 
+/** 이 IP 에서 이미 들어온 표 수 */
+function ipVotes_(ip, mode) {
+  var sh = voteSheet_();
+  var found = sh.getRange('I:I').createTextFinder(ip).matchEntireCell(true).findAll();
+  var n = 0;
+  found.forEach(function (r) { if (String(sh.getRange(r.getRow(), 2).getValue()) === mode) n++; });
+  return n;
+}
+
 function voteCast_(p) {
   var ph = phase_(p.preview);
   if (!ph.ok) return ph;
-  var em = normEmail_(p.email);
-  if (!em) return { ok: false, error: '이메일 주소를 확인해 주십시오.' };
+  var mode = authMode_(p), id = ident_(p, mode);
+  if (id.error) return { ok: false, error: id.error };
+  var ip = String(p.ip || '').slice(0, 64);
+  if (!ip) return { ok: false, error: NO_IP_MSG };
 
   var cache = CacheService.getScriptCache();
-  var raw = cache.get('code:' + em.key);
+  var raw = cache.get('code:' + id.key);
   if (!raw) return { ok: false, error: '인증번호가 만료되었습니다. 다시 받아 주십시오.', expired: true };
   var c = JSON.parse(raw);
   if (c.tries >= 5) return { ok: false, error: '인증번호를 5번 틀렸습니다. 다시 받아 주십시오.', expired: true };
   if (String(p.code || '').trim() !== c.code) {
     c.tries++;
-    cache.put('code:' + em.key, JSON.stringify(c), 1800);
+    cache.put('code:' + id.key, JSON.stringify(c), 1800);
     return { ok: false, error: '인증번호가 맞지 않습니다. (' + c.tries + '/5)' };
   }
 
@@ -328,16 +415,18 @@ function voteCast_(p) {
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    if (votedTracks_(em.key, ph.mode).length)   // 1인 1표: 부문과 관계없이 한 번만
-      return { ok: false, error: '이 이메일은 이미 투표했습니다. (1인 1표)', already: true };
+    if (votedTracks_(id.key, ph.mode).length)   // 1인 1표: 부문과 관계없이 한 번만
+      return { ok: false, error: who_(id) + ' 이미 투표했습니다. (1인 1표)', already: true };
+    if (ipLimit_() && ipVotes_(ip, ph.mode) >= ipLimit_()) return { ok: false, error: IP_MSG, ipBlocked: true };
     var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
-    var row = [now, ph.mode, x.track, x.id, x.title, x.artist, em.addr, em.key + '|' + x.track + '|' + ph.mode,
-      String(p.ip || '').slice(0, 64), String(p.device || '').slice(0, 40)];
+    var row = [now, ph.mode, x.track, x.id, x.title, x.artist, id.addr, id.key + '|' + x.track + '|' + ph.mode,
+      ip, String(p.device || '').slice(0, 40)];
     voteSheet_().appendRow(row.map(function (v) { return typeof v === 'string' && /^[=+\-@]/.test(v) ? "'" + v : v; }));
+    cache.remove('code:' + id.key);
   } finally {
     lock.releaseLock();
   }
-  return { ok: true, track: x.track, voted: votedTracks_(em.key, ph.mode), mode: ph.mode };
+  return { ok: true, track: x.track, voted: [x.track], mode: ph.mode };
 }
 
 /* ── 운영자용 (편집기에서 실행) ─────────────────────────── */

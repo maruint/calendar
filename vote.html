@@ -111,6 +111,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
 .box input.code{font-family:var(--mono);letter-spacing:.4em;font-size:22px;text-align:center}
 .box .row{display:flex;gap:8px;margin-top:16px}
 .box .row .btn{flex:1}
+.ipnote{font-size:12px;color:var(--ember);margin-top:10px;line-height:1.55;word-break:keep-all}
 .msg{min-height:1.4em;font-size:13px;margin-top:10px;color:var(--zb)}
 .msg.good{color:var(--ok)}
 .agree{font-size:12px;color:var(--mute);margin-top:12px;line-height:1.55}
@@ -154,7 +155,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
   <div id="status" class="status"><i></i><span>불러오는 중…</span></div>
   <div class="how">
     <div><b>01</b>작품을 눌러 크게 보고 「이 작품에 투표」를 누릅니다.</div>
-    <div><b>02</b>이메일로 받은 6자리 인증번호를 입력합니다.</div>
+    <div><b>02</b><span id="how2">이메일로 받은 6자리 인증번호를 입력합니다.</span></div>
     <div><b>03</b>1인 1표, 한 번 한 투표는 바꿀 수 없습니다.</div>
   </div>
 </section>
@@ -173,13 +174,14 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
   <h3>투표 안내</h3>
   <ul>
     <li>투표 기간: 2026년 10월 14일(수) 17:00 ~ 10월 22일(목) 23:59</li>
-    <li>이메일 1개당 전체 작품 중 1표입니다. 득표수는 마감 때까지 공개하지 않으며, 결과는 10월 27일(화)에 발표합니다.</li>
-    <li>여러 이메일을 만들어 반복 투표하는 등 부정 투표가 확인되면 해당 표는 무효 처리될 수 있습니다.</li>
+    <li><span class="authWord">이메일</span> 1개당 전체 작품 중 1표입니다. 득표수는 마감 때까지 공개하지 않으며, 결과는 10월 27일(화)에 발표합니다.</li>
+    <li><b>같은 인터넷(IP)에서는 1표만 투표할 수 있습니다.</b> 학교·회사·PC방처럼 여러 사람이 같은 인터넷을 쓰는 곳에서는 투표가 되지 않을 수 있으니, 이 경우 휴대폰 데이터(LTE·5G)로 접속해 투표해 주십시오.</li>
+    <li>여러 <span class="authWord">이메일</span>을 만들어 반복 투표하는 등 부정 투표가 확인되면 해당 표는 무효 처리될 수 있습니다.</li>
     <li>응모자 본인도 투표할 수 있습니다. 작품 순서는 무작위로 섞여 보입니다.</li>
   </ul>
   <h3>개인정보 수집·이용 안내</h3>
   <ul>
-    <li>수집 항목: 이메일 주소, 접속 IP, 기기 식별값 · 목적: 본인 확인과 중복 투표 방지</li>
+    <li>수집 항목: <span class="authWord2">이메일 주소</span>, 접속 IP, 기기 식별값 · 목적: 본인 확인과 중복 투표 방지</li>
     <li>보유 기간: 결과 발표 후 1개월(2026년 11월 27일)까지 보관 후 삭제합니다.</li>
     <li>투표를 위해 인증번호를 요청하면 위 내용에 동의한 것으로 봅니다. 동의하지 않으면 투표할 수 없습니다.</li>
   </ul>
@@ -214,21 +216,22 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
 <div class="dlg" id="dlg">
   <div class="box">
     <div id="step1">
-      <h3>이메일 인증</h3>
+      <h3 id="aTitle">이메일 인증</h3>
       <p class="sub" id="dTarget"></p>
-      <label for="email">이메일 주소</label>
+      <label for="email" id="aLabel">이메일 주소</label>
       <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com">
-      <div class="agree">인증번호를 받으면 이메일·접속 IP를 중복 투표 방지 목적으로 수집하고 2026년 11월 27일까지 보관하는 데 동의하게 됩니다.</div>
+      <div class="ipnote">같은 인터넷(IP)에서는 1표만 가능합니다. 학교·회사 등에서 안 되면 휴대폰 데이터로 접속해 주십시오.</div>
+      <div class="agree">인증번호를 받으면 <span class="authWord2">이메일 주소</span>·접속 IP를 중복 투표 방지 목적으로 수집하고 2026년 11월 27일까지 보관하는 데 동의하게 됩니다.</div>
       <div class="msg" id="msg1"></div>
       <div class="row"><button class="btn ghost" data-close>취소</button><button class="btn" id="sendCode">인증번호 받기</button></div>
     </div>
     <div id="step2" hidden>
       <h3>인증번호 입력</h3>
-      <p class="sub"><span id="sentTo"></span>로 보낸 6자리 번호를 입력해 주십시오. 메일이 안 보이면 스팸함도 확인해 주십시오.</p>
+      <p class="sub"><span id="sentTo"></span>(으)로 보낸 6자리 번호를 입력해 주십시오. <span id="spamTip">메일이 안 보이면 스팸함도 확인해 주십시오.</span></p>
       <input id="code" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
       <div class="msg" id="msg2"></div>
       <div class="row"><button class="btn ghost" data-close>취소</button><button class="btn" id="castVote">투표하기</button></div>
-      <button class="link" id="reEmail">다른 이메일로 / 인증번호 다시 받기</button>
+      <button class="link" id="reEmail"><span id="reWord">다른 이메일로</span> / 인증번호 다시 받기</button>
     </div>
     <div id="step3" hidden>
       <h3>투표했습니다 🎉</h3>
@@ -253,6 +256,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
 (function(){
   var API = '/api/vote';
   var DEMO = /[?&]demo=1/.test(location.search);
+  var AUTH = (location.search.match(/[?&]auth=(phone|email)/) || [])[1] || 'email';   // 서버 설정으로 덮어씀
   var PREVIEW = DEMO || /[?&]preview=1/.test(location.search);
   var $ = function(s){ return document.querySelector(s); };
   var state = { data:null, track:'Cinema 4D', list:[], cur:-1, voting:null };
@@ -400,6 +404,23 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     t.onclick=function(){ state.track=t.dataset.track; render(); window.scrollTo({top:$('#tabs').offsetTop,behavior:'smooth'}); };
   });
 
+  /* 인증 방식 (이메일 / 휴대폰) */
+  function applyAuth(){
+    var ph = AUTH==='phone';
+    $('#aTitle').textContent = ph ? '휴대폰 인증' : '이메일 인증';
+    $('#aLabel').textContent = ph ? '휴대폰 번호' : '이메일 주소';
+    var inp=$('#email');
+    inp.type = ph ? 'tel' : 'email'; inp.inputMode = ph ? 'tel' : 'email';
+    inp.autocomplete = ph ? 'tel' : 'email'; inp.placeholder = ph ? '010-1234-5678' : 'name@example.com';
+    $('#how2').textContent = ph ? '휴대폰 문자로 받은 6자리 인증번호를 입력합니다.' : '이메일로 받은 6자리 인증번호를 입력합니다.';
+    $('#spamTip').textContent = ph ? '' : '메일이 안 보이면 스팸함도 확인해 주십시오.';
+    $('#reWord').textContent = ph ? '다른 번호로' : '다른 이메일로';
+    document.querySelectorAll('.authWord').forEach(function(x){ x.textContent = ph ? '휴대폰 번호' : '이메일'; });
+    document.querySelectorAll('.authWord2').forEach(function(x){ x.textContent = ph ? '휴대폰 번호' : '이메일 주소'; });
+  }
+  function idOk(v){ return AUTH==='phone' ? /^01[016789]\d{7,8}$/.test(v.replace(/\D/g,'')) : /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
+  function idPayload(o, v){ if (AUTH==='phone') o.phone=v; else o.email=v; o.auth=AUTH; return o; }
+
   /* 투표 */
   function show(step){ ['step1','step2','step3'].forEach(function(s){ $('#'+s).hidden = s!==step; }); }
   function closeDlg(){ $('#dlg').classList.remove('on'); }
@@ -408,6 +429,8 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     var e=state.list[state.cur]; state.voting=e;
     $('#dTarget').textContent=e.track+' · 「'+e.title+'」 ('+e.artist+')';
     $('#msg1').textContent=''; $('#msg2').textContent=''; $('#code').value='';
+    if (sess.auth && sess.auth!==AUTH) { sess.email=''; sess.code=''; sess.sent=0; }
+    sess.auth=AUTH; saveSess();
     if (sess.email && sess.code) { $('#sentTo').textContent=sess.email; $('#code').value=sess.code; show('step2'); }
     else if (sess.email && sess.sent && Date.now()-sess.sent < 30*60e3) { $('#sentTo').textContent=sess.email; show('step2'); }
     else { $('#email').value=sess.email||''; show('step1'); }
@@ -418,15 +441,15 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
 
   $('#sendCode').onclick=function(){
     var em=$('#email').value.trim(), b=this;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) { $('#msg1').textContent='이메일 주소를 확인해 주십시오.'; return; }
+    if (!idOk(em)) { $('#msg1').textContent= AUTH==='phone' ? '휴대폰 번호를 확인해 주십시오. (예: 010-1234-5678)' : '이메일 주소를 확인해 주십시오.'; return; }
     b.disabled=true; b.textContent='보내는 중…'; $('#msg1').textContent='';
-    post({action:'code',email:em}).then(function(r){
+    post(idPayload({action:'code'}, em)).then(function(r){
       b.disabled=false; b.textContent='인증번호 받기';
       if (!r.ok) { $('#msg1').textContent=r.error; return; }
       sess.email=em; sess.code=''; sess.sent=Date.now(); saveSess();
       if ((r.voted||[]).length && !mine.all) mine.all='?';
       store.set('mine1',mine);
-      if (mine.all) { $('#msg1').textContent='이 이메일은 이미 투표했습니다. (1인 1표)'; render(); return; }
+      if (mine.all) { $('#msg1').textContent='이미 투표하셨습니다. (1인 1표)'; render(); return; }
       $('#sentTo').textContent=em; $('#msg2').className='msg good'; $('#msg2').textContent='인증번호를 보냈습니다.';
       show('step2'); $('#code').focus();
     });
@@ -438,7 +461,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     var code=$('#code').value.replace(/\D/g,''), b=this, e=state.voting;
     if (code.length!==6) { $('#msg2').className='msg'; $('#msg2').textContent='6자리 숫자를 입력해 주십시오.'; return; }
     b.disabled=true; b.textContent='투표하는 중…';
-    post({action:'vote',email:sess.email,code:code,id:e.id}).then(function(r){
+    post(idPayload({action:'vote',code:code,id:e.id}, sess.email)).then(function(r){
       b.disabled=false; b.textContent='투표하기'; $('#msg2').className='msg';
       if (!r.ok) {
         $('#msg2').textContent=r.error;
@@ -539,7 +562,8 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
   (DEMO ? Promise.resolve({ ok:true, open:'2026-10-01T00:00:00+09:00', close:'2026-10-22T23:59:59+09:00', paused:false, entries:demoList() })
         : fetch(API+'?action=list').then(function(r){ return r.json(); })).then(function(D){
     if (!D || !D.ok) throw new Error();
-    state.data=D; setStatus(); setInterval(setStatus,60000);
+    state.data=D; if (D.auth && !(PREVIEW && /[?&]auth=/.test(location.search))) AUTH=D.auth; applyAuth();
+    setStatus(); setInterval(setStatus,60000);
     if (judge && judge.token) return enterJudge().then(function(){
       var m=location.hash.match(/^#e-(.+)$/), t=state.judge && m && state.data.entries.filter(function(e){ return e.id===decodeURIComponent(m[1]); })[0];
       if (t) openEntry(state.list.indexOf(t));

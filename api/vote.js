@@ -52,7 +52,7 @@ module.exports = async (req, res) => {
       const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.headers['x-real-ip'] || '';
       const body = {
         action: p.action, email: p.email, code: p.code, id: p.id,
-        device: p.device, preview: !!p.preview, ip,
+        device: p.device, preview: !!p.preview, ip, phone: p.phone, auth: p.auth,
         pw: p.pw, token: p.token, entry: p.entry, s1: p.s1, s2: p.s2, s3: p.s3, pick: !!p.pick, note: p.note
       };
       const r = await fetch(GAS, {

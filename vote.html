@@ -274,6 +274,9 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
   function img(id,w){
     if (DEMO) { var n=id.slice(-2); return '/past/2021/m' + n + (w<1000 ? '-s' : '') + '.webp'; }
     return API + '?action=img&id=' + encodeURIComponent(id) + '&w=' + w; }
+  function procImg(id,n){
+    if (DEMO) return '/past/2021/' + ['e04','e05','e07','e09'][n%4] + '.webp';
+    return API + '?action=img&id=' + encodeURIComponent(id) + '&n=' + n + '&w=1600'; }
   function pimg(id,n){
     if (DEMO) return '/past/2021/' + ['e04','e05','e07','e09'][n%4] + '.webp';
     return API + '?action=pimg&id=' + encodeURIComponent(id) + '&n=' + n + '&w=1600&t=' + encodeURIComponent(judge.token); }
@@ -362,11 +365,10 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     $('#mVote').hidden = !!state.judge;
     $('#mExt').textContent = state.judge && e.ext ? '외부 소스 · ' + e.ext : '';
     var pr=$('#mProc'); pr.innerHTML='';
-    if (state.judge) {
-      if (e.proc) { var h=document.createElement('h4'); h.textContent='제작 과정 자료 ' + e.proc + '장 (심사위원에게만 보임)'; pr.appendChild(h); }
-      for (var k=0;k<(e.proc||0);k++){ var pi=document.createElement('img'); pi.loading='lazy'; pi.alt='과정 자료 '+(k+1); pi.src=pimg(e.id,k); pr.appendChild(pi); }
-      judgePanel(e);
-    } else $('#jPanel').hidden=true;
+    if (e.proc) { var h=document.createElement('h4'); h.textContent='Making · 제작 과정 ' + e.proc + '장'; pr.appendChild(h); }
+    for (var k=0;k<(e.proc||0);k++){ var pi=document.createElement('img'); pi.loading='lazy'; pi.alt='제작 과정 '+(k+1);
+      pi.src= state.judge ? pimg(e.id,k) : procImg(e.id,k); pr.appendChild(pi); }
+    if (state.judge) judgePanel(e); else $('#jPanel').hidden=true;
     $('#modal').classList.add('on'); document.body.style.overflow='hidden';
     $('#modal').scrollTop=0;
     history.replaceState(null,'','#e-'+e.id);
@@ -456,7 +458,7 @@ h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,60px);line-h
     var titles=['겨울 정거장','빛의 정원','기계 고래','붉은 숲','물방울 도시','새벽의 등대','작은 우주','모래 시계','유리 새','마지막 열차','달의 정원사','시간의 문'];
     var out=[];
     for (var i=1;i<=12;i++){ var n=(i<10?'0':'')+i; out.push({ id:'demo_'+n, track: i<=6?'Cinema 4D':'ZBrush', title:titles[i-1],
-      artist:['3D아티스트','studio_k','모델러 J','pixel_lee','하늘조형','N.Park'][(i-1)%6], sw: i<=6?'Cinema 4D 2025, Redshift':'ZBrush 2025, KeyShot',
+      artist:['3D아티스트','studio_k','모델러 J','pixel_lee','하늘조형','N.Park'][(i-1)%6], sw: i<=6?'Cinema 4D 2025, Redshift':'ZBrush 2025, KeyShot', proc:2,
       desc:'샘플 작품 설명입니다. 실제 화면에서는 응모자가 접수 때 쓴 작업 설명이 이 자리에 나옵니다.\n여러 줄도 그대로 보입니다.' }); }
     return out;
   }

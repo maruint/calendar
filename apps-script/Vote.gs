@@ -29,7 +29,7 @@ var DISPOSABLE = ['mailinator.com', 'guerrillamail.com', 'guerrillamail.net', 's
 function voteGet_(e) {
   var p = e.parameter || {};
   if (p.action === 'list') return json_(voteList_());
-  if (p.action === 'img') return json_(voteImg_(p.id, p.w));
+  if (p.action === 'img') return json_(voteImg_(p.id, p.w, p.n));
   if (p.action === 'diag') {   // 공개 작품 점검 (개인정보 없음)
     CacheService.getScriptCache().remove('entries');
     var d = scanEntries_();
@@ -124,7 +124,8 @@ function scanEntries_() {
   var c = function (name) { return h.indexOf(name); };
   var cPub = c('공개'), cId = c('접수번호'), cTrack = c('응모부문'), cTitle = c('작품제목'),
       cArtist = c('활동명'), cSw = c('사용소프트웨어'), cDesc = c('작업설명'), cImg = c('작품이미지 링크'),
-      cProc = c('과정자료 링크'), cFolder = c('폴더 링크'), cExt = c('외부소스'), cExtD = c('외부소스상세');
+      cProc = c('과정자료 링크'), cFolder = c('폴더 링크'), cExt = c('외부소스'), cExtD = c('외부소스상세'),
+      cAgree = c('과정자료활용동의');
   if (cPub < 0) return { list: [], note: '「공개」 제목 칸 없음', headers: h };
 
   var list = [], skipped = [];
@@ -151,7 +152,8 @@ function scanEntries_() {
       desc: String(r[cDesc] || ''),
       file: file,
       proc: proc.filter(function (id) { return id !== file; }),
-      ext: [cExt >= 0 ? r[cExt] : '', cExtD >= 0 ? r[cExtD] : ''].filter(String).join(' · ')
+      ext: [cExt >= 0 ? r[cExt] : '', cExtD >= 0 ? r[cExtD] : ''].filter(String).join(' · '),
+      procPublic: cAgree < 0 || String(r[cAgree]).trim() === '동의'   // 과정 자료 활용 동의한 사람만 일반 공개
     });
   }
   return { list: list, skipped: skipped, headers: h };
@@ -175,14 +177,20 @@ function voteList_() {
     open: VOTE_OPEN.toISOString(), close: VOTE_CLOSE.toISOString(),
     paused: VOTE_PAUSED, now: now.toISOString(),
     entries: publicEntries_().map(function (x) {
-      return { id: x.id, track: x.track, title: x.title, artist: x.artist, sw: x.sw, desc: x.desc };
+      return { id: x.id, track: x.track, title: x.title, artist: x.artist, sw: x.sw, desc: x.desc,
+        proc: x.procPublic ? x.proc.length : 0 };
     })
   };
 }
 
-function voteImg_(id, w) {
+function voteImg_(id, w, n) {
   var x = publicEntries_().filter(function (e) { return e.id === id; })[0];
   if (!x) return { ok: false, error: 'not found' };
+  if (n != null && n !== '') {   // making(제작 과정) 이미지
+    var k = parseInt(n, 10);
+    if (!x.procPublic || !(k >= 0 && k < x.proc.length)) return { ok: false, error: 'not found' };
+    return driveImg_(x.proc[k], w);
+  }
   return driveImg_(x.file, w);
 }
 

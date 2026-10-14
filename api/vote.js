@@ -23,7 +23,8 @@ module.exports = async (req, res) => {
       }
       if (action === 'img' && id) {
         const size = Math.min(Math.max(parseInt(w, 10) || 800, 200), 2000);
-        const r = await fetch(GAS + '?action=img&id=' + encodeURIComponent(id) + '&w=' + size, { redirect: 'follow' });
+        const n = req.query.n != null && req.query.n !== '' ? '&n=' + (parseInt(req.query.n, 10) || 0) : '';
+        const r = await fetch(GAS + '?action=img&id=' + encodeURIComponent(id) + n + '&w=' + size, { redirect: 'follow' });
         const j = await r.json();
         if (!j.ok) { res.setHeader('Cache-Control', 'no-store'); return res.status(404).send('not found'); }
         res.setHeader('Content-Type', j.type || 'image/jpeg');

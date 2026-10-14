@@ -98,22 +98,29 @@ function driveIds_(text, rich, kind) {
 
 function isImage_(f) { return /^image\//.test(f.getMimeType()); }
 
-/** 접수 폴더 구조: 폴더 바로 아래 이미지 = 작품, making 폴더 안 이미지 = 과정 자료 */
-function folderImages_(folderId) {
-  var folder = DriveApp.getFolderById(folderId), work = [], proc = [];
+/** 접수 폴더 구조: making 폴더 안 이미지 = 과정 자료. making 폴더가 없으면 작품을 뺀 나머지 이미지를 과정 자료로 본다.
+ *  작품 = 시트의 작품이미지 링크 파일 → 이름이 「작품」으로 시작하는 파일 → 가장 큰 파일 순 */
+function folderImages_(folderId, preferId) {
+  var folder = DriveApp.getFolderById(folderId), root = [], making = [], hasMaking = false;
   var it = folder.getFiles();
-  while (it.hasNext()) { var f = it.next(); if (isImage_(f)) work.push(f); }
+  while (it.hasNext()) { var f = it.next(); if (isImage_(f)) root.push(f); }
   var mk = folder.getFolders();
   while (mk.hasNext()) {
     var sub = mk.next();
     if (!/^making$/i.test(sub.getName().trim())) continue;
+    hasMaking = true;
     var it2 = sub.getFiles();
-    while (it2.hasNext()) { var g = it2.next(); if (isImage_(g)) proc.push(g); }
+    while (it2.hasNext()) { var g = it2.next(); if (isImage_(g)) making.push(g); }
   }
   var byName = function (a, b) { return a.getName() < b.getName() ? -1 : 1; };
-  work.sort(function (a, b) { return b.getSize() - a.getSize(); });   // 작품이 여러 장이면 가장 큰 파일
-  proc.sort(byName);
-  return { work: work[0] ? work[0].getId() : null, proc: proc.map(function (f) { return f.getId(); }) };
+  var work = preferId || null;
+  if (!work) {
+    var named = root.filter(function (x) { return /^작품/.test(x.getName()); });
+    var pool = (named.length ? named : root).slice().sort(function (a, b) { return b.getSize() - a.getSize(); });
+    work = pool[0] ? pool[0].getId() : null;
+  }
+  var proc = (hasMaking ? making : root.filter(function (x) { return x.getId() !== work; })).sort(byName);
+  return { work: work, proc: proc.map(function (x) { return x.getId(); }) };
 }
 
 function scanEntries_() {
@@ -132,15 +139,13 @@ function scanEntries_() {
   for (var i = 1; i < v.length; i++) {
     var r = v[i];
     if (!isPub_(r[cPub])) continue;
-    var file = null, proc = [];
-    // 1) 접수 폴더(making 하위 폴더 포함)에서 찾기
+    // 작품: 시트의 작품이미지 링크가 우선. 과정 자료: 접수 폴더의 making 폴더 (없으면 폴더 안 나머지 이미지)
+    var file = cImg >= 0 ? (driveIds_(r[cImg], rich[i][cImg], 'file')[0] || null) : null, proc = [];
     var fids = cFolder >= 0 ? driveIds_(r[cFolder], rich[i][cFolder], 'folder') : [];
     if (fids.length) {
-      try { var fi = folderImages_(fids[0]); file = fi.work; proc = fi.proc; }
+      try { var fi = folderImages_(fids[0], file); file = fi.work; proc = fi.proc; }
       catch (err) { console.error('folder ' + r[cId], err); }
     }
-    // 2) 시트의 링크로 찾기
-    if (!file && cImg >= 0) file = driveIds_(r[cImg], rich[i][cImg], 'file')[0] || null;
     if (!proc.length && cProc >= 0) proc = driveIds_(r[cProc], rich[i][cProc], 'file');
     if (!file) { skipped.push((i + 1) + '행'); continue; }
     list.push({

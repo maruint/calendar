@@ -63,6 +63,11 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
 .card:hover .desk{transform:translateY(-3px)}
 .card.over .page{outline:3px solid var(--ember);outline-offset:3px}
 .card.dragging{opacity:.4}
+.card .grab{position:absolute;right:6px;bottom:6px;background:rgba(7,7,10,.78);color:var(--txt);font-size:11px;padding:2px 7px;border:1px solid var(--line);pointer-events:none;opacity:0;transition:opacity .15s}
+.card:hover .grab{opacity:1}
+@media(hover:none){.card .grab{opacity:1}}
+.ghost{position:fixed;z-index:30;width:120px;pointer-events:none;opacity:.85;box-shadow:0 8px 24px rgba(0,0,0,.6);transform:translate(-50%,-50%)}
+.ghost canvas{width:100%;display:block}
 .page .add{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--mute);border:2px dashed var(--line);background:var(--panel)}
 .page .add b{font-size:28px;line-height:1;color:var(--txt);font-weight:400}
 .page .add small{font-size:12px}
@@ -129,7 +134,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
 
 <main>
   <section id="gridView">
-    <p class="hint">빈 달을 눌러 이미지를 넣거나, 이미지 파일을 원하는 달 위에 바로 끌어다 놓으세요. 그림이 있는 달을 누르면 위치·크기를 맞추는 창이 열립니다. 달끼리 끌어서 놓으면 서로 자리가 바뀝니다. 이미지는 이 브라우저 안에서만 처리되고 어디에도 올라가지 않습니다.</p>
+    <p class="hint">빈 달을 눌러 이미지를 넣거나, 이미지 파일을 원하는 달 위에 바로 끌어다 놓으세요. 그림이 있는 달을 누르면 위치·크기를 맞추는 창이 열립니다. <b>그림을 다른 달로 끌어다 놓으면 그 달로 옮겨집니다</b>(그 달에 그림이 있으면 서로 자리를 바꿈). 휴대폰에서는 그림을 잠깐 누르고 있다가 끌면 됩니다. 이미지는 이 브라우저 안에서만 처리되고 어디에도 올라가지 않습니다.</p>
     <div class="grid" id="grid"></div>
   </section>
   <section id="flipView" hidden>
@@ -288,7 +293,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
       date = '<div class="dateph"><b>' + i + ' ' + EN[i] + ' 2027 · 날짜판 자리(예시)</b>' + Array.from({length:35}, function(){ return '<span></span>'; }).join('') + '</div>';
     }
     d.innerHTML = rings + '<div class="page">' + (it ? '<canvas></canvas>' : '<div class="add"><b>+</b><small>' + NAMES[i] + ' 이미지 추가</small></div>') +
-      '<div class="holes">' + Array.from({length:19}, function(){ return '<i></i>'; }).join('') + '</div>' + date + '</div>' +
+      '<div class="holes">' + Array.from({length:19}, function(){ return '<i></i>'; }).join('') + '</div>' + date + (it && !big ? '<span class="grab">⠿ 끌어서 다른 달로</span>' : '') + '</div>' +
       '<div class="base"><div class="foil"></div></div>';
     d.querySelector('.foil').textContent = $('#foil').value || '하단 박 자리';
     if (it) { var cv = d.querySelector('canvas'); cv.width = big ? 1060 : 424; cv.height = Math.round(cv.width * CUT.h / CUT.w); paintTrim(cv, it); }
@@ -306,7 +311,8 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
       cap.innerHTML = '<span class="mo' + (i === 0 ? ' cover' : '') + '">' + NAMES[i] + '</span><span class="nm"></span><span class="w">' + warnText(it) + '</span>';
       cap.querySelector('.nm').textContent = it ? it.label : '비어 있음';
       card.appendChild(cap);
-      card.onclick = function(){ it ? openEditor(i) : pick(i); };
+      card.onclick = function(){ if (justDragged) return; it ? openEditor(i) : pick(i); };
+      if (it) touchDrag(card, i);
       card.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/slot', String(i)); e.dataTransfer.effectAllowed = 'move'; card.classList.add('dragging'); });
       card.addEventListener('dragend', function(){ card.classList.remove('dragging'); });
       card.addEventListener('dragover', function(e){ e.preventDefault(); card.classList.add('over'); });
@@ -322,6 +328,42 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
       });
       g.appendChild(card);
     });
+  }
+  // 휴대폰: 카드를 잠깐 누르고 있다가 끌어서 다른 달에 놓기 (HTML5 끌기는 터치에서 안 됨)
+  var justDragged = false;
+  function touchDrag(card, from){
+    var timer = null, ghost = null, over = null, sx = 0, sy = 0;
+    function target(x, y){ var el = document.elementFromPoint(x, y); return el && el.closest('.card'); }
+    function end(){ clearTimeout(timer); timer = null; if (ghost) { ghost.remove(); ghost = null; } if (over) over.classList.remove('over'); card.classList.remove('dragging'); }
+    card.addEventListener('touchstart', function(e){
+      var t = e.touches[0]; sx = t.clientX; sy = t.clientY;
+      timer = setTimeout(function(){
+        timer = null; card.classList.add('dragging');
+        ghost = document.createElement('div'); ghost.className = 'ghost';
+        var src = card.querySelector('canvas'), cv = document.createElement('canvas'); cv.width = src.width; cv.height = src.height;
+        cv.getContext('2d').drawImage(src, 0, 0); ghost.appendChild(cv); document.body.appendChild(ghost);
+        ghost.style.left = sx + 'px'; ghost.style.top = sy + 'px';
+        if (navigator.vibrate) navigator.vibrate(15);
+      }, 350);
+    }, { passive: true });
+    card.addEventListener('touchmove', function(e){
+      var t = e.touches[0];
+      if (!ghost) { if (Math.abs(t.clientX - sx) + Math.abs(t.clientY - sy) > 10) end(); return; }
+      e.preventDefault();
+      ghost.style.left = t.clientX + 'px'; ghost.style.top = t.clientY + 'px';
+      var c = target(t.clientX, t.clientY);
+      if (over && over !== c) over.classList.remove('over');
+      over = c; if (c && c !== card) c.classList.add('over');
+      if (t.clientY < 60) window.scrollBy(0, -12); else if (t.clientY > innerHeight - 60) window.scrollBy(0, 12);
+    }, { passive: false });
+    card.addEventListener('touchend', function(e){
+      if (!ghost) { end(); return; }
+      var t = e.changedTouches[0], c = target(t.clientX, t.clientY);
+      end(); justDragged = true; setTimeout(function(){ justDragged = false; }, 400);
+      if (c && +c.dataset.slot !== from) swap(from, +c.dataset.slot);
+    });
+    card.addEventListener('touchcancel', end);
+    card.addEventListener('contextmenu', function(e){ e.preventDefault(); });
   }
   function swap(a, b){ var t = slots[a]; slots[a] = slots[b]; slots[b] = t; renderAll(); }
 

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>캘린더 이미지 맞추기 — 180×200 탁상 (내부용)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@600;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#07070A;--deep:#0D0E12;--panel:#14161B;--panel-2:#191C22;--line:#33373F;
+  --ember:#FF6A16;--blue:#2E9BFF;--bone:#F2F3F6;--mute:#A7ADB7;--txt:#C6CBD3;--ok:#2ED47A;--red:#E6231A;
+  --sans:'IBM Plex Sans KR',-apple-system,'Malgun Gothic',sans-serif;
+  --disp:'Oxanium','IBM Plex Sans KR',sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--void);color:var(--bone);font-family:var(--sans);font-size:14px;line-height:1.6;word-break:keep-all}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer;background:var(--panel-2);border:1px solid var(--line);padding:8px 14px}
+button:hover{border-color:var(--mute)}
+button.main{background:var(--ember);border-color:var(--ember);color:#160700;font-weight:700}
+button:disabled{opacity:.4;cursor:default}
+header{border-bottom:1px solid var(--line);background:var(--deep);padding:14px 20px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+header h1{font-family:var(--disp);font-weight:800;font-size:20px;margin:0}
+header span{color:var(--mute);font-family:var(--mono);font-size:12px}
+.app{display:grid;grid-template-columns:260px minmax(0,1fr) 280px;min-height:calc(100vh - 56px)}
+@media(max-width:1100px){.app{grid-template-columns:1fr}}
+aside,.side{background:var(--deep);padding:16px;border-right:1px solid var(--line)}
+.side{border-right:0;border-left:1px solid var(--line)}
+.drop{display:block;border:1px dashed var(--line);padding:18px 12px;text-align:center;color:var(--mute);cursor:pointer;margin-bottom:12px}
+.drop.on{border-color:var(--ember);color:var(--bone)}
+.list{display:flex;flex-direction:column;gap:6px}
+.item{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center;padding:6px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.item.sel{border-color:var(--ember)}
+.item img{width:44px;height:43px;object-fit:cover;display:block;background:#000}
+.item .n{font-size:12px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .m{font-family:var(--mono);font-size:11px;color:var(--mute)}
+.item .m b{color:var(--ok);font-weight:500}
+.item .m i{color:var(--ember);font-style:normal}
+main{padding:20px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.stagewrap{position:relative;width:min(100%,640px)}
+canvas#stage{width:100%;display:block;background:#000;touch-action:none;cursor:grab}
+canvas#stage.drag{cursor:grabbing}
+.empty{color:var(--mute);padding:80px 20px;text-align:center}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;width:min(100%,640px)}
+.tools input[type=range]{flex:1;min-width:160px;accent-color:var(--ember)}
+.legend{font-size:12px;color:var(--mute);width:min(100%,640px)}
+.legend b{font-weight:500}
+.lg-cut{color:#ff4d4d}.lg-safe{color:#ffd24d}.lg-ring{color:#7fb7ff}
+.side h3{font-size:13px;margin:0 0 6px;color:var(--txt)}
+.side .row{margin-bottom:14px}
+.side select,.side input[type=text]{width:100%;background:var(--panel);border:1px solid var(--line);padding:7px 8px}
+.side .note{font-size:12px;color:var(--mute)}
+.side .warn{font-size:12px;color:var(--ember)}
+.side .good{font-size:12px;color:var(--ok)}
+.chk{display:flex;gap:6px;align-items:center;font-size:13px}
+.btns{display:flex;flex-direction:column;gap:8px}
+.spec{font-family:var(--mono);font-size:11.5px;color:var(--mute);border-top:1px solid var(--line);padding-top:12px;margin-top:16px}
+</style>
+</head>
+<body>
+<header>
+  <h1>캘린더 이미지 맞추기</h1>
+  <span>180×200 하단박 탁상 · 한 면 184×179mm(재단 여유 포함) · 2173×2109px · 300dpi</span>
+</header>
+
+<div class="app">
+  <aside>
+    <label class="drop" id="drop">이미지를 끌어다 놓거나<br>눌러서 고르세요 (여러 장 가능)
+      <input type="file" id="file" accept="image/*" multiple hidden>
+    </label>
+    <div class="list" id="list"></div>
+  </aside>
+
+  <main>
+    <div class="stagewrap">
+      <canvas id="stage" width="2173" height="2109" hidden></canvas>
+      <div class="empty" id="empty">왼쪽에 이미지를 올리면 여기서 위치와 크기를 맞출 수 있습니다.<br>파일은 이 컴퓨터 브라우저 안에서만 처리되고 어디에도 올라가지 않습니다.</div>
+    </div>
+    <div class="tools" id="tools" hidden>
+      <span>확대</span><input type="range" id="zoom" min="0" max="1000" value="0">
+      <button id="fitCover" title="빈 곳 없이 꽉 채우기">꽉 채우기</button>
+      <button id="fitContain" title="작품 전체가 보이게(남는 곳은 배경색)">전체 보이기</button>
+      <button id="center">가운데</button>
+    </div>
+    <div class="legend" id="legend" hidden>
+      드래그로 위치를, 확대 막대나 마우스 휠로 크기를 맞춥니다.
+      <b class="lg-cut">빨간 실선</b> = 재단선(바깥 2mm는 잘려 나감) ·
+      <b class="lg-safe">노란 점선</b> = 글자·중요한 부분 안전선 ·
+      <b class="lg-ring">파란 칸</b> = 링 구멍 자리
+    </div>
+  </main>
+
+  <div class="side">
+    <div id="props" hidden>
+      <div class="row"><h3>들어갈 달</h3>
+        <select id="month"></select>
+      </div>
+      <div class="row"><h3>작가 · 작품명 (파일 이름에 씀)</h3>
+        <input type="text" id="label" placeholder="예: PNION_그럼에도 불구하고">
+      </div>
+      <div class="row"><h3>배경색 (전체 보이기일 때 남는 곳)</h3>
+        <input type="color" id="bg" value="#000000">
+      </div>
+      <div class="row"><label class="chk"><input type="checkbox" id="guides" checked> 안내선 보기 (저장 파일에는 안 들어감)</label></div>
+      <div class="row" id="res"></div>
+      <div class="btns">
+        <button class="main" id="saveOne">이 이미지 저장 (jpg)</button>
+        <button id="remove">목록에서 빼기</button>
+      </div>
+    </div>
+    <div class="btns" style="margin-top:18px">
+      <button class="main" id="saveAll" disabled>전체 저장 (zip)</button>
+    </div>
+    <div class="spec">
+      저장 규격<br>
+      · 2173 × 2109px, 300dpi, JPEG 최고 품질<br>
+      · 재단선 바깥 2mm(24px)까지 그림이 채워짐<br>
+      · 칼선·안내선 없이 저장 (업체 요청대로)<br>
+      · 파일 이름: 01월_작가_작품명.jpg
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var W = 2173, H = 2109;                                   // 칼선 PSD 기준 (300dpi, 사방 재단 여유 2mm)
+  var CUT = {x:24, y:24, w:2121, h:2062};                   // 재단선
+  var SAFE = {x:119, y:201, w:1934, h:1791};                // 글자 안전선
+  var RING = {y:0, h:125};                                  // 링 구멍 자리
+  var MONTHS = ['표지'].concat(Array.from({length:12}, function(_, i){ return (i + 1) + '월'; }));
+
+  var $ = function(s){ return document.querySelector(s); };
+  var stage = $('#stage'), ctx = stage.getContext('2d');
+  var items = [], cur = -1, uid = 0;
+
+  MONTHS.forEach(function(m, i){ var o = document.createElement('option'); o.value = i; o.textContent = m; $('#month').appendChild(o); });
+
+  // ---------- 불러오기 ----------
+  function addFiles(files){
+    Array.prototype.forEach.call(files, function(f){
+      if (!/^image\//.test(f.type)) return;
+      var url = URL.createObjectURL(f), img = new Image();
+      img.onload = function(){
+        var it = { id: ++uid, img: img, url: url, name: f.name, label: f.name.replace(/\.[^.]+$/, ''),
+          month: nextMonth(), bg: '#000000' };
+        fitCover(it);
+        items.push(it);
+        select(items.length - 1);
+      };
+      img.src = url;
+    });
+  }
+  function nextMonth(){
+    for (var m = 1; m <= 12; m++) if (!items.some(function(it){ return it.month === m; })) return m;
+    return 0;
+  }
+  $('#file').addEventListener('change', function(e){ addFiles(e.target.files); e.target.value = ''; });
+  var drop = $('#drop');
+  ['dragenter','dragover'].forEach(function(t){ document.addEventListener(t, function(e){ e.preventDefault(); drop.classList.add('on'); }); });
+  ['dragleave','drop'].forEach(function(t){ document.addEventListener(t, function(e){ e.preventDefault(); drop.classList.remove('on'); }); });
+  document.addEventListener('drop', function(e){ if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+
+  // ---------- 맞추기 ----------
+  function coverScale(it){ return Math.max(W / it.img.naturalWidth, H / it.img.naturalHeight); }
+  function containScale(it){ return Math.min(W / it.img.naturalWidth, H / it.img.naturalHeight); }
+  function fitCover(it){ it.s = coverScale(it); centerIt(it); }
+  function fitContain(it){ it.s = containScale(it); centerIt(it); }
+  function centerIt(it){ it.x = (W - it.img.naturalWidth * it.s) / 2; it.y = (H - it.img.naturalHeight * it.s) / 2; }
+  function clamp(it){
+    var w = it.img.naturalWidth * it.s, h = it.img.naturalHeight * it.s;
+    it.x = w >= W ? Math.min(0, Math.max(W - w, it.x)) : (W - w) / 2;
+    it.y = h >= H ? Math.min(0, Math.max(H - h, it.y)) : (H - h) / 2;
+  }
+  // 확대 막대: 0 = 전체 보이기, 250 = 꽉 채우기, 1000 = 꽉 채우기의 4배
+  function sliderToScale(it, v){
+    var a = containScale(it), b = coverScale(it);
+    return v <= 250 ? a + (b - a) * v / 250 : b * Math.pow(4, (v - 250) / 750);
+  }
+  function scaleToSlider(it){
+    var a = containScale(it), b = coverScale(it);
+    if (it.s <= b) return b === a ? 250 : Math.round(250 * (it.s - a) / (b - a));
+    return Math.round(250 + 750 * Math.log(it.s / b) / Math.log(4));
+  }
+  function zoomAt(it, s, cx, cy){
+    var min = containScale(it), max = coverScale(it) * 4;
+    s = Math.max(min, Math.min(max, s));
+    it.x = cx - (cx - it.x) * s / it.s; it.y = cy - (cy - it.y) * s / it.s; it.s = s;
+    clamp(it);
+  }
+
+  // ---------- 그리기 ----------
+  function paint(c, it, guides){
+    c.fillStyle = it.bg; c.fillRect(0, 0, W, H);
+    c.imageSmoothingQuality = 'high';
+    c.drawImage(it.img, it.x, it.y, it.img.naturalWidth * it.s, it.img.naturalHeight * it.s);
+    if (!guides) return;
+    c.save();
+    c.fillStyle = 'rgba(0,0,0,.45)';                          // 잘려 나가는 2mm
+    c.fillRect(0, 0, W, CUT.y); c.fillRect(0, CUT.y + CUT.h, W, H - CUT.y - CUT.h);
+    c.fillRect(0, CUT.y, CUT.x, CUT.h); c.fillRect(CUT.x + CUT.w, CUT.y, W - CUT.x - CUT.w, CUT.h);
+    c.fillStyle = 'rgba(46,155,255,.22)'; c.fillRect(CUT.x, RING.y, CUT.w, RING.h);
+    c.strokeStyle = '#7fb7ff'; c.lineWidth = 2;
+    for (var i = 0; i < 19; i++) { var rx = 100 + i * 106.3; c.strokeRect(rx, 66, 58, 58); }
+    c.strokeStyle = '#ff4d4d'; c.lineWidth = 5; c.strokeRect(CUT.x, CUT.y, CUT.w, CUT.h);
+    c.strokeStyle = '#ffd24d'; c.lineWidth = 4; c.setLineDash([22, 14]); c.strokeRect(SAFE.x, SAFE.y, SAFE.w, SAFE.h);
+    c.restore();
+  }
+  function render(){
+    var it = items[cur];
+    stage.hidden = !it; $('#empty').hidden = !!it; $('#tools').hidden = !it; $('#legend').hidden = !it; $('#props').hidden = !it;
+    $('#saveAll').disabled = !items.length;
+    renderList();
+    if (!it) return;
+    paint(ctx, it, $('#guides').checked);
+    $('#zoom').value = scaleToSlider(it);
+    // 해상도 판정: 원본 1px 이 출력 1px 보다 크게 늘어나면(확대) 300dpi 미만
+    var dpi = Math.round(300 / it.s), res = $('#res');
+    var src = it.img.naturalWidth + ' × ' + it.img.naturalHeight + 'px';
+    if (it.s <= 1.02) res.innerHTML = '<div class="good">원본 ' + src + ' · 실제 인쇄 해상도 약 ' + Math.min(dpi, 999) + 'dpi — 충분합니다</div>';
+    else if (it.s <= 1.25) res.innerHTML = '<div class="warn">원본 ' + src + ' · 약 ' + dpi + 'dpi로 조금 늘어납니다 (대부분 눈에 띄지 않음)</div>';
+    else res.innerHTML = '<div class="warn">원본 ' + src + ' · 약 ' + dpi + 'dpi — 많이 확대돼 흐려질 수 있습니다. 확대를 줄이거나 큰 원본을 받으세요</div>';
+  }
+  function renderList(){
+    var box = $('#list'); box.innerHTML = '';
+    items.slice().sort(function(a, b){ return (a.month || 99) - (b.month || 99); }).forEach(function(it){
+      var i = items.indexOf(it), d = document.createElement('div');
+      d.className = 'item' + (i === cur ? ' sel' : '');
+      var dup = it.month && items.filter(function(o){ return o.month === it.month; }).length > 1;
+      d.innerHTML = '<img alt=""><div><div class="n"></div><div class="m">' + (dup ? '<i>' + MONTHS[it.month] + ' 겹침</i>' : '<b>' + MONTHS[it.month] + '</b>') + '</div></div>';
+      d.querySelector('img').src = it.url; d.querySelector('.n').textContent = it.label;
+      d.onclick = function(){ select(i); };
+      box.appendChild(d);
+    });
+  }
+  function select(i){
+    cur = i; var it = items[i];
+    if (it) { $('#month').value = it.month; $('#label').value = it.label; $('#bg').value = it.bg; }
+    render();
+  }
+
+  // ---------- 조작 ----------
+  function pt(e){ var r = stage.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
+  var drag = null;
+  stage.addEventListener('pointerdown', function(e){ var it = items[cur]; if (!it) return; stage.setPointerCapture(e.pointerId); drag = { p: pt(e), x: it.x, y: it.y }; stage.classList.add('drag'); });
+  stage.addEventListener('pointermove', function(e){ var it = items[cur]; if (!drag || !it) return; var p = pt(e); it.x = drag.x + p.x - drag.p.x; it.y = drag.y + p.y - drag.p.y; clamp(it); render(); });
+  ['pointerup','pointercancel'].forEach(function(t){ stage.addEventListener(t, function(){ drag = null; stage.classList.remove('drag'); }); });
+  stage.addEventListener('wheel', function(e){ var it = items[cur]; if (!it) return; e.preventDefault(); var p = pt(e); zoomAt(it, it.s * Math.pow(1.0015, -e.deltaY), p.x, p.y); render(); }, { passive: false });
+  $('#zoom').addEventListener('input', function(){ var it = items[cur]; if (!it) return; zoomAt(it, sliderToScale(it, +this.value), W / 2, H / 2); render(); });
+  $('#fitCover').onclick = function(){ var it = items[cur]; if (it) { fitCover(it); render(); } };
+  $('#fitContain').onclick = function(){ var it = items[cur]; if (it) { fitContain(it); render(); } };
+  $('#center').onclick = function(){ var it = items[cur]; if (it) { centerIt(it); clamp(it); render(); } };
+  $('#month').onchange = function(){ var it = items[cur]; if (it) { it.month = +this.value; render(); } };
+  $('#label').oninput = function(){ var it = items[cur]; if (it) { it.label = this.value; renderList(); } };
+  $('#bg').oninput = function(){ var it = items[cur]; if (it) { it.bg = this.value; render(); } };
+  $('#guides').onchange = render;
+  $('#remove').onclick = function(){ if (cur < 0) return; URL.revokeObjectURL(items[cur].url); items.splice(cur, 1); select(Math.min(cur, items.length - 1)); };
+  document.addEventListener('keydown', function(e){
+    var it = items[cur]; if (!it || /INPUT|SELECT/.test(document.activeElement.tagName)) return;
+    var step = e.shiftKey ? 50 : 5, k = { ArrowLeft:[-step,0], ArrowRight:[step,0], ArrowUp:[0,-step], ArrowDown:[0,step] }[e.key];
+    if (k) { e.preventDefault(); it.x += k[0]; it.y += k[1]; clamp(it); render(); }
+  });
+
+  // ---------- 저장 ----------
+  function fileName(it){
+    var m = it.month === 0 ? '00_표지' : (it.month < 10 ? '0' : '') + it.month + '월';
+    return m + '_' + (it.label || 'image').replace(/[\\/:*?"<>|]+/g, '_').trim() + '.jpg';
+  }
+  function exportBlob(it){
+    return new Promise(function(done){
+      var c = document.createElement('canvas'); c.width = W; c.height = H;
+      paint(c.getContext('2d'), it, false);
+      c.toBlob(function(b){
+        b.arrayBuffer().then(function(buf){ done(new Blob([setDpi(new Uint8Array(buf), 300)], { type: 'image/jpeg' })); });
+      }, 'image/jpeg', 0.97);
+    });
+  }
+  // JFIF APP0 의 밀도를 300dpi 로 기록 (없으면 그대로)
+  function setDpi(u, dpi){
+    if (u[2] === 0xFF && u[3] === 0xE0 && u[6] === 0x4A && u[7] === 0x46 && u[8] === 0x49 && u[9] === 0x46) {
+      u[13] = 1; u[14] = dpi >> 8; u[15] = dpi & 255; u[16] = dpi >> 8; u[17] = dpi & 255;
+    }
+    return u;
+  }
+  function download(blob, name){
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  $('#saveOne').onclick = function(){ var it = items[cur]; if (it) exportBlob(it).then(function(b){ download(b, fileName(it)); }); };
+  $('#saveAll').onclick = function(){
+    var btn = this; btn.disabled = true; btn.textContent = '만드는 중…';
+    var list = items.slice().sort(function(a, b){ return a.month - b.month; }), files = [];
+    list.reduce(function(p, it){
+      return p.then(function(){ return exportBlob(it); }).then(function(b){ return b.arrayBuffer(); })
+        .then(function(buf){ files.push({ name: fileName(it), data: new Uint8Array(buf) }); });
+    }, Promise.resolve()).then(function(){
+      download(zip(files), '2027캘린더_180x200_이미지.zip');
+      btn.disabled = false; btn.textContent = '전체 저장 (zip)';
+    });
+  };
+
+  // 압축 없는(store) zip — jpg 는 이미 압축돼 있어 충분하다
+  var CRC = (function(){ var t = []; for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(u){ var c = 0xFFFFFFFF; for (var i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function zip(files){
+    var enc = new TextEncoder(), parts = [], central = [], off = 0;
+    files.forEach(function(f){
+      var name = enc.encode(f.name), crc = crc32(f.data), n = f.data.length;
+      var h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);   // UTF-8 이름
+      h.setUint32(14, crc, true); h.setUint32(18, n, true); h.setUint32(22, n, true); h.setUint16(26, name.length, true);
+      parts.push(h.buffer, name, f.data);
+      var c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+      c.setUint32(16, crc, true); c.setUint32(20, n, true); c.setUint32(24, n, true); c.setUint16(28, name.length, true);
+      c.setUint32(42, off, true);
+      central.push(c.buffer, name);
+      off += 30 + name.length + n;
+    });
+    var size = central.reduce(function(s, p){ return s + (p.byteLength || p.length); }, 0);
+    var e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+    e.setUint32(12, size, true); e.setUint32(16, off, true);
+    return new Blob(parts.concat(central, [e.buffer]), { type: 'application/zip' });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

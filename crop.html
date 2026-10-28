@@ -77,6 +77,13 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
 .cap .nm{font-size:12px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .cap .w{font-size:11px;color:var(--ember);white-space:nowrap}
 .hint{color:var(--mute);font-size:13px;margin:0 0 18px}
+.cap2{font-size:11.5px;color:var(--txt);margin-top:2px;line-height:1.4}
+.poolwrap{margin-top:44px;border-top:1px solid var(--line);padding-top:18px}
+.poolwrap h2{font-family:var(--disp);font-size:18px;margin:0 0 4px}
+.pool{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(130px,100%),1fr));gap:18px 14px}
+@media(max-width:560px){.pool{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.pool .base,.pool .rings{display:none}
+.pool .cap .mo{font-size:12px;color:var(--mute)}
 
 /* 넘겨보기 */
 .flip{display:flex;align-items:center;justify-content:center;gap:18px}
@@ -136,6 +143,11 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
   <section id="gridView">
     <p class="hint">빈 달을 눌러 이미지를 넣거나, 이미지 파일을 원하는 달 위에 바로 끌어다 놓으세요. 그림이 있는 달을 누르면 위치·크기를 맞추는 창이 열립니다. <b>그림을 다른 달로 끌어다 놓으면 그 달로 옮겨집니다</b>(그 달에 그림이 있으면 서로 자리를 바꿈). 휴대폰에서는 그림을 잠깐 누르고 있다가 끌면 됩니다. 이미지는 이 브라우저 안에서만 처리되고 어디에도 올라가지 않습니다.</p>
     <div class="grid" id="grid"></div>
+    <div class="poolwrap">
+      <h2>후보 보관함</h2>
+      <p class="hint">달에 넣지 않은 작품입니다. 보관함 작품을 달 위로 끌어 놓으면 서로 자리가 바뀌고, 달의 작품을 「빈 자리」로 끌어 놓으면 보관함으로 빠집니다.</p>
+      <div class="pool" id="pool"></div>
+    </div>
   </section>
   <section id="flipView" hidden>
     <div class="flip">
@@ -173,7 +185,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
         <button class="main" id="done">완료</button>
         <button id="saveOne">이 장만 저장 (jpg)</button>
         <button id="replace">다른 이미지로 바꾸기</button>
-        <button id="remove">이 달에서 빼기</button>
+        <button id="remove">후보 보관함으로 빼기</button>
       </div>
     </div>
   </div>
@@ -191,10 +203,12 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
   var FILL = [1,2,3,4,5,6,7,8,9,10,11,12,0];                // 여러 장을 올리면 1월부터 채우고 표지는 마지막
 
   var $ = function(s){ return document.querySelector(s); };
+  var M = 13;                                               // 0~12 = 표지·달, 13 이상 = 후보 보관함
+  function nameOf(i){ return i < M ? NAMES[i] : '후보'; }
   var slots = new Array(13).fill(null);                     // 0=표지, 1~12=월
   var editing = -1, pickTarget = -1, flipAt = 1, view = 'grid';
 
-  NAMES.forEach(function(n, i){ var o = document.createElement('option'); o.value = i; o.textContent = n; $('#month').appendChild(o); });
+  NAMES.concat(['후보 보관함으로 빼기']).forEach(function(n, i){ var o = document.createElement('option'); o.value = i < M ? i : -1; o.textContent = n; $('#month').appendChild(o); });
 
   // ---------- 이미지 ----------
   function load(file){
@@ -216,7 +230,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
       seq = seq.then(function(){ return load(f); }).then(function(it){
         if (!it) return;
         var s = (k === 0 && at >= 0) ? at : FILL.filter(function(i){ return !slots[i]; })[0];
-        if (s === undefined) { alert('13칸(표지+12달)이 모두 찼습니다. 바꿀 달을 눌러 「다른 이미지로 바꾸기」를 쓰세요.'); return; }
+        if (s === undefined) { slots.push(it); compactPool(); return; }
         if (slots[s]) URL.revokeObjectURL(slots[s].url);
         slots[s] = it;
       });
@@ -289,10 +303,10 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
     var it = slots[i], d = document.createElement('div'); d.className = 'desk';
     var rings = '<div class="rings">' + Array.from({length:19}, function(_, k){ return '<i style="left:' + (4.6 + k * 4.89) + '%"></i>'; }).join('') + '</div>';
     var date = '';
-    if ($('#dateph').checked && i > 0) {
+    if ($('#dateph').checked && i > 0 && i < M) {
       date = '<div class="dateph"><b>' + i + ' ' + EN[i] + ' 2027 · 날짜판 자리(예시)</b>' + Array.from({length:35}, function(){ return '<span></span>'; }).join('') + '</div>';
     }
-    d.innerHTML = rings + '<div class="page">' + (it ? '<canvas></canvas>' : '<div class="add"><b>+</b><small>' + NAMES[i] + ' 이미지 추가</small></div>') +
+    d.innerHTML = rings + '<div class="page">' + (it ? '<canvas></canvas>' : '<div class="add"><b>+</b><small>' + (i < M ? NAMES[i] + ' 이미지 추가' : '빈 자리 (여기로 끌어 빼기)') + '</small></div>') +
       '<div class="holes">' + Array.from({length:19}, function(){ return '<i></i>'; }).join('') + '</div>' + date + (it && !big ? '<span class="grab">⠿ 끌어서 다른 달로</span>' : '') + '</div>' +
       '<div class="base"><div class="foil"></div></div>';
     d.querySelector('.foil').textContent = $('#foil').value || '하단 박 자리';
@@ -302,16 +316,19 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
   function warnText(it){ return it && it.s > 1.25 ? '흐림 주의' : ''; }
 
   function renderGrid(){
-    var g = $('#grid'); g.innerHTML = '';
-    ORDER.forEach(function(i){
+    $('#grid').innerHTML = ''; $('#pool').innerHTML = '';
+    compactPool();
+    ORDER.concat(slots.map(function(_, k){ return k; }).slice(M)).forEach(function(i){
+      var g = i < M ? $('#grid') : $('#pool');
       var it = slots[i], card = document.createElement('div');
       card.className = 'card'; card.dataset.slot = i; card.draggable = !!it;
       card.appendChild(deskEl(i, false));
       var cap = document.createElement('div'); cap.className = 'cap';
-      cap.innerHTML = '<span class="mo' + (i === 0 ? ' cover' : '') + '">' + NAMES[i] + '</span><span class="nm"></span><span class="w">' + warnText(it) + '</span>';
-      cap.querySelector('.nm').textContent = it ? it.label : '비어 있음';
+      cap.innerHTML = '<span class="mo' + (i === 0 ? ' cover' : '') + '">' + nameOf(i) + '</span><span class="nm"></span><span class="w">' + warnText(it) + '</span>';
+      cap.querySelector('.nm').textContent = it ? it.label : (i < M ? '비어 있음' : '');
       card.appendChild(cap);
-      card.onclick = function(){ if (justDragged) return; it ? openEditor(i) : pick(i); };
+      if (it && it.note && i < M) { var n2 = document.createElement('div'); n2.className = 'cap2'; n2.textContent = it.note; card.appendChild(n2); }
+      card.onclick = function(){ if (justDragged) return; if (it) openEditor(i); else if (i < M) pick(i); };
       if (it) touchDrag(card, i);
       card.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/slot', String(i)); e.dataTransfer.effectAllowed = 'move'; card.classList.add('dragging'); });
       card.addEventListener('dragend', function(){ card.classList.remove('dragging'); });
@@ -320,6 +337,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
       card.addEventListener('drop', function(e){
         e.preventDefault(); card.classList.remove('over');
         if (e.dataTransfer.files && e.dataTransfer.files.length) {
+          if (i >= M) { addFiles(e.dataTransfer.files, -1); return; }
           if (slots[i] && !confirm(NAMES[i] + '에 있는 이미지를 새 이미지로 바꿀까요?')) return;
           addFiles(e.dataTransfer.files, i); return;
         }
@@ -366,6 +384,11 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
     card.addEventListener('contextmenu', function(e){ e.preventDefault(); });
   }
   function swap(a, b){ var t = slots[a]; slots[a] = slots[b]; slots[b] = t; renderAll(); }
+  // 보관함: 빈 칸은 모아서 맨 끝에 하나만 남김
+  function compactPool(){
+    var keep = slots.slice(M).filter(Boolean);
+    slots.length = M; keep.forEach(function(x){ slots.push(x); }); slots.push(null);
+  }
 
   function renderFlip(){
     var box = $('#flipDesk'); box.innerHTML = ''; box.appendChild(deskEl(flipAt, true));
@@ -391,7 +414,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
   })();
 
   function renderAll(){
-    var n = slots.filter(Boolean).length, months = slots.slice(1).filter(Boolean).length;
+    var n = slots.slice(0, M).filter(Boolean).length, months = slots.slice(1, M).filter(Boolean).length;
     $('#count').innerHTML = '채운 달 <b>' + months + '</b>/12 · 표지 ' + (slots[0] ? '<b>있음</b>' : '없음');
     $('#saveAll').disabled = !n;
     view === 'grid' ? renderGrid() : renderFlip();
@@ -413,8 +436,8 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
   function closeEditor(){ editing = -1; $('#modal').hidden = true; document.body.style.overflow = ''; renderAll(); }
   function fillProps(){
     var it = cur(); if (!it) return;
-    $('#edTitle').textContent = NAMES[editing] + (editing ? ' · ' + EN[editing] : '');
-    $('#month').value = editing; $('#label').value = it.label; $('#bg').value = it.bg;
+    $('#edTitle').textContent = editing < M ? NAMES[editing] + (editing ? ' · ' + EN[editing] : '') : '후보 보관함';
+    $('#month').value = editing < M ? editing : -1; $('#label').value = it.label; $('#bg').value = it.bg;
   }
   function paintStage(){
     var it = cur(); if (!it) return;
@@ -438,12 +461,19 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
   $('#guides').onchange = paintStage;
   $('#label').oninput = function(){ var it = cur(); if (it) it.label = this.value; };
   $('#bg').oninput = function(){ var it = cur(); if (it) { it.bg = this.value; paintStage(); } };
-  $('#month').onchange = function(){ var to = +this.value; if (to !== editing) { swap(editing, to); editing = to; fillProps(); } };
+  $('#month').onchange = function(){
+    var to = +this.value;
+    if (to < 0) { if (editing < M) { slots.push(slots[editing]); slots[editing] = null; closeEditor(); } return; }
+    if (to !== editing) { var it = slots[editing]; swap(editing, to); editing = slots.indexOf(it); fillProps(); }
+  };
   $('#done').onclick = closeEditor;
   $('#modal').addEventListener('click', function(e){ if (e.target === this) closeEditor(); });
   $('#replace').onclick = function(){ pick(editing); };
-  $('#remove').onclick = function(){ if (!confirm(NAMES[editing] + '에서 이 이미지를 뺄까요?')) return; URL.revokeObjectURL(cur().url); slots[editing] = null; closeEditor(); };
-  $('#saveOne').onclick = function(){ var i = editing; exportBlob(slots[i]).then(function(b){ download(b, fileName(i)); }); };
+  $('#remove').onclick = function(){
+    if (editing < M) { slots.push(slots[editing]); slots[editing] = null; closeEditor(); return; }
+    if (!confirm('이 작품을 보관함에서 지울까요?')) return; slots[editing] = null; closeEditor();
+  };
+  $('#saveOne').onclick = function(){ var i = editing; exportBlob(slots[i]).then(function(b){ download(b, i < M ? fileName(i) : (slots[i].label || 'image') + '.jpg'); }); };
   document.addEventListener('keydown', function(e){
     if (/INPUT|SELECT/.test(document.activeElement.tagName)) return;
     if (editing < 0) { if (view === 'flip' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) step(e.key === 'ArrowLeft' ? -1 : 1); return; }
@@ -512,7 +542,35 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
     return new Blob(parts.concat(central, [e.buffer]), { type: 'application/zip' });
   }
 
-  renderAll();
+  // ---------- 미리 배치 불러오기: ?set=preset.json ----------
+  // { foil, items: [ { src, label, slot(0~12, 없으면 보관함), note, fx, fy(0~1 보이는 위치), fit:'cover'|'contain', bg } ] }
+  function loadPreset(url){
+    $('#count').textContent = '작품 불러오는 중…';
+    return fetch(url).then(function(r){ return r.json(); }).then(function(j){
+      var base = url.replace(/[^/]*$/, '');
+      return Promise.all(j.items.map(function(x){
+        return new Promise(function(done){
+          var img = new Image();
+          img.onload = function(){
+            var it = { img: img, url: img.src, label: x.label || '', note: x.note || '', bg: x.bg || '#000000' };
+            if (x.fit === 'contain') fitContain(it); else fitCover(it);
+            var w = img.naturalWidth * it.s, h = img.naturalHeight * it.s;
+            if (x.fx != null) it.x = (W - w) * x.fx;
+            if (x.fy != null) it.y = (H - h) * x.fy;
+            clamp(it); done({ it: it, slot: x.slot });
+          };
+          img.onerror = function(){ done(null); };
+          img.src = /^(https?:)?\//.test(x.src) ? x.src : base + x.src;
+        });
+      })).then(function(list){
+        list.forEach(function(r){ if (!r) return; if (r.slot != null && r.slot < M && !slots[r.slot]) slots[r.slot] = r.it; else slots.push(r.it); });
+        if (j.foil) $('#foil').value = j.foil;
+        renderAll();
+      });
+    }).catch(function(){ $('#count').textContent = '미리 배치를 불러오지 못했습니다.'; });
+  }
+  var q = new URLSearchParams(location.search).get('set');
+  if (q) loadPreset(q); else renderAll();
 })();
 </script>
 </body>

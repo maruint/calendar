@@ -46,6 +46,10 @@ header{position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line);backg
 .rings i{position:absolute;bottom:-34%;width:2.1%;height:150%;border:2px solid #9aa0aa;border-bottom-color:transparent;border-radius:40% 40% 0 0}
 .page{position:relative;width:100%;aspect-ratio:2121/2062;background:#1b1e24;overflow:hidden;box-shadow:0 1px 0 #000,0 10px 24px rgba(0,0,0,.45)}
 .page canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.page.band canvas{height:var(--imgh,83.03%)}
+.page .strip{position:absolute;left:0;right:0;bottom:0;height:calc(100% - var(--imgh,83.03%));background:#fff;display:flex;align-items:center;gap:4%;padding:0 5% 0 6%;pointer-events:none}
+.page .strip b{font-family:var(--disp);font-weight:800;color:#1d4fa3;font-size:clamp(14px,4.2vw,46px);line-height:1}
+.page .strip span{font-family:var(--mono);font-size:clamp(5px,.62vw,9px);color:#333;letter-spacing:.02em;white-space:nowrap;overflow:hidden}
 .page .holes{position:absolute;left:0;right:0;top:2.2%;display:flex;justify-content:space-around;padding:0 3%;pointer-events:none}
 .page .holes i{width:2.4%;aspect-ratio:1;background:var(--void);border-radius:1px;opacity:.85}
 .page .dateph{position:absolute;left:5%;right:5%;bottom:5%;height:36%;background:rgba(255,255,255,.82);display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:auto repeat(5,1fr);gap:1px;padding:4px;pointer-events:none}
@@ -135,6 +139,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
     <span class="count" id="count"></span>
     <label>하단 박 문구 <input type="text" id="foil" value="MAXON · MARU INTERNATIONAL"></label>
     <label><input type="checkbox" id="dateph"> 날짜판 자리 예시 보기</label>
+    <button id="resetLayout" hidden title="옮긴 위치를 지우고 처음 배치로">처음 배치로 되돌리기</button>
   </div>
 </header>
 <input type="file" id="file" accept="image/*" multiple hidden>
@@ -193,6 +198,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
 
 <script>
 (function(){
+  var BAND = false;
   var W = 2173, H = 2109;                                   // 칼선 PSD 기준 (300dpi, 사방 재단 여유 2mm)
   var CUT = {x:24, y:24, w:2121, h:2062};
   var SAFE = {x:119, y:201, w:1934, h:1791};
@@ -306,8 +312,14 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
     if ($('#dateph').checked && i > 0 && i < M) {
       date = '<div class="dateph"><b>' + i + ' ' + EN[i] + ' 2027 · 날짜판 자리(예시)</b>' + Array.from({length:35}, function(){ return '<span></span>'; }).join('') + '</div>';
     }
-    d.innerHTML = rings + '<div class="page">' + (it ? '<canvas></canvas>' : '<div class="add"><b>+</b><small>' + (i < M ? NAMES[i] + ' 이미지 추가' : '빈 자리 (여기로 끌어 빼기)') + '</small></div>') +
-      '<div class="holes">' + Array.from({length:19}, function(){ return '<i></i>'; }).join('') + '</div>' + date + (it && !big ? '<span class="grab">⠿ 끌어서 다른 달로</span>' : '') + '</div>' +
+    var strip = '';
+    if (BAND && i > 0 && i < M) {
+      var nd = new Date(2027, i, 0).getDate(), days = '';
+      for (var k = 1; k <= nd; k++) { var wd = new Date(2027, i - 1, k).getDay(); days += '<i style="font-style:normal;color:' + (wd === 0 ? '#e0453a' : wd === 6 ? '#2a7fd0' : '#333') + '">' + k + '</i> '; }
+      strip = '<div class="strip"><b>' + i + '</b><span>' + days + '</span></div>';
+    }
+    d.innerHTML = rings + '<div class="page' + (BAND && i < M && i > 0 ? ' band' : '') + '">' + (it ? '<canvas></canvas>' : '<div class="add"><b>+</b><small>' + (i < M ? NAMES[i] + ' 이미지 추가' : '빈 자리 (여기로 끌어 빼기)') + '</small></div>') +
+      '<div class="holes">' + Array.from({length:19}, function(){ return '<i></i>'; }).join('') + '</div>' + strip + date + (it && !big ? '<span class="grab">⠿ 끌어서 다른 달로</span>' : '') + '</div>' +
       '<div class="base"><div class="foil"></div></div>';
     d.querySelector('.foil').textContent = $('#foil').value || '하단 박 자리';
     if (it) { var cv = d.querySelector('canvas'); cv.width = big ? 1060 : 424; cv.height = Math.round(cv.width * CUT.h / CUT.w); paintTrim(cv, it); }
@@ -413,7 +425,15 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
     box.addEventListener('touchend', function(e){ if (sx === null) return; var dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1); });
   })();
 
+  var KEY = null;
+  function saveLayout(){
+    if (!KEY) return;
+    var o = {};
+    slots.forEach(function(it, i){ if (it) o[it.src] = { slot: i, x: it.x, y: it.y, s: it.s, bg: it.bg }; });
+    try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {}
+  }
   function renderAll(){
+    saveLayout();
     var n = slots.slice(0, M).filter(Boolean).length, months = slots.slice(1, M).filter(Boolean).length;
     $('#count').innerHTML = '채운 달 <b>' + months + '</b>/12 · 표지 ' + (slots[0] ? '<b>있음</b>' : '없음');
     $('#saveAll').disabled = !n;
@@ -548,27 +568,39 @@ main{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
     $('#count').textContent = '작품 불러오는 중…';
     return fetch(url).then(function(r){ return r.json(); }).then(function(j){
       var base = url.replace(/[^/]*$/, '');
+      if (j.frame) {                                        // 그림 영역만 (아래 날짜 띠 제외)
+        W = j.frame.w; H = j.frame.h; CUT = j.frame.cut; SAFE = j.frame.safe; BAND = !!j.frame.band;
+        stage.width = W; stage.height = H;
+        document.documentElement.style.setProperty('--imgh', (CUT.h / 2062 * 100).toFixed(2) + '%');
+        $('.bar .spec').textContent = '180×200 하단박 · 그림 영역 ' + W + '×' + H + 'px (184×147mm, 아래 날짜 띠 제외) · 300dpi';
+      }
+      KEY = 'cal27:' + (j.key || url);
+      var saved = {}; try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
       return Promise.all(j.items.map(function(x){
         return new Promise(function(done){
           var img = new Image();
           img.onload = function(){
-            var it = { img: img, url: img.src, label: x.label || '', note: x.note || '', bg: x.bg || '#000000' };
+            var it = { img: img, url: img.src, src: x.src, label: x.label || '', note: x.note || '', bg: x.bg || '#000000' };
             if (x.fit === 'contain') fitContain(it); else fitCover(it);
             var w = img.naturalWidth * it.s, h = img.naturalHeight * it.s;
             if (x.fx != null) it.x = (W - w) * x.fx;
             if (x.fy != null) it.y = (H - h) * x.fy;
-            clamp(it); done({ it: it, slot: x.slot });
+            var sv = saved[x.src], slot = x.slot;
+            if (sv) { it.x = sv.x; it.y = sv.y; it.s = sv.s; it.bg = sv.bg || it.bg; slot = sv.slot; }
+            clamp(it); done({ it: it, slot: slot });
           };
           img.onerror = function(){ done(null); };
           img.src = /^(https?:)?\//.test(x.src) ? x.src : base + x.src;
         });
       })).then(function(list){
         list.forEach(function(r){ if (!r) return; if (r.slot != null && r.slot < M && !slots[r.slot]) slots[r.slot] = r.it; else slots.push(r.it); });
+        $('#resetLayout').hidden = false;
         if (j.foil) $('#foil').value = j.foil;
         renderAll();
       });
     }).catch(function(){ $('#count').textContent = '미리 배치를 불러오지 못했습니다.'; });
   }
+  $('#resetLayout').onclick = function(){ if (confirm('옮긴 위치와 달 배치를 모두 지우고 처음 배치로 되돌릴까요?')) { localStorage.removeItem(KEY); location.reload(); } };
   var q = new URLSearchParams(location.search).get('set');
   if (q) loadPreset(q); else renderAll();
 })();
